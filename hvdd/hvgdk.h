@@ -15,7 +15,7 @@ Author:
     Hypervisor Engineering Team (hvet) 01-May-2005
 
 --*/
-
+#include <emmintrin.h>  
 #if !defined(_HVGDK_)
 #define _HVGDK_
 
@@ -2521,33 +2521,61 @@ typedef UINT64 HV_FLUSH_FLAGS, *PHV_FLUSH_FLAGS;
 
 typedef UINT64 HV_TRANSLATE_GVA_CONTROL_FLAGS, *PHV_TRANSLATE_GVA_CONTROL_FLAGS;
 
+typedef enum {
+	HvTranslateGvaSuccess = 0, // Translation failures 
+	HvTranslateGvaPageNotPresent = 1,
+	HvTranslateGvaPrivilegeViolation = 2,
+	HvTranslateGvaInvalidPageTableFlags = 3,
+
+	// GPA access failures 
+	HvTranslateGvaGpaUnmapped = 4,
+	HvTranslateGvaGpaNoReadAccess = 5,
+	HvTranslateGvaGpaNoWriteAccess = 6,
+	HvTranslateGvaGpaIllegalOverlayAccess = 7,
+	HvTranslateGvaIntercept = 8
+} HV_TRANSLATE_GVA_RESULT_CODE;
+
 typedef enum _HV_TRANSLATE_GVA_RESULT_CODE
 {
-    HvTranslateGvaSuccess                 = 0,
+	WHvTranslateGvaResultSuccess = 0,
 
-    // Translation Failures
-    HvTranslateGvaPageNotPresent          = 1,
-    HvTranslateGvaPrivilegeViolation      = 2,
-    HvTranslateGvaInvalidPageTableFlags   = 3,
+	// Translation failures
+	WHvTranslateGvaResultPageNotPresent = 1,
+	WHvTranslateGvaResultPrivilegeViolation = 2,
+	WHvTranslateGvaResultInvalidPageTableFlags = 3,
 
-    // GPA access failures
-    HvTranslateGvaGpaUnmapped             = 4,
-    HvTranslateGvaGpaNoReadAccess         = 5,
-    HvTranslateGvaGpaNoWriteAccess        = 6,
-    HvTranslateGvaGpaIllegalOverlayAccess = 7
+	// GPA access failures
+	WHvTranslateGvaResultGpaUnmapped = 4,
+	WHvTranslateGvaResultGpaNoReadAccess = 5,
+	WHvTranslateGvaResultGpaNoWriteAccess = 6,
+	WHvTranslateGvaResultGpaIllegalOverlayAccess = 7,
+	WHvTranslateGvaResultIntercept = 8
 
 } HV_TRANSLATE_GVA_RESULT_CODE, *PHV_TRANSLATE_GVA_RESULT_CODE;
+//
+//typedef union _HV_TRANSLATE_GVA_RESULT
+//{
+//	UINT64 AsUINT64;
+//    struct
+//    {
+//        HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
+//        UINT32 CacheType : 8;
+//        UINT32 OverlayPage : 1;
+//        UINT32 Reserved : 23;
+//    };
+//} HV_TRANSLATE_GVA_RESULT, *PHV_TRANSLATE_GVA_RESULT;
 
-typedef union _HV_TRANSLATE_GVA_RESULT
+typedef struct _HV_TRANSLATE_GVA_RESULT //Windows 10/ Server 2019
 {
-    UINT64 AsUINT64;
-    struct
-    {
-        HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
-        UINT32 CacheType : 8;
-        UINT32 OverlayPage : 1;
-        UINT32 Reserved : 23;
-    };
+	__m128i AsUINT128_0;
+	struct
+	{
+		HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
+		UINT32 Reserved00;
+		UINT64 Reserved01;
+	};
+	__m128i AsUINT128_1;
+	__m128i AsUINT128_2;
 } HV_TRANSLATE_GVA_RESULT, *PHV_TRANSLATE_GVA_RESULT;
 
 //

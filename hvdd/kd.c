@@ -23,6 +23,38 @@ Revision History:
 
 #include "hvdd.h"
 
+
+//for future - make def file
+
+
+UINT64 GetGuestReg(PHVDD_PARTITION PartitionEntry)
+{
+	HV_REGISTER_NAME RegisterCode;
+	HV_REGISTER_VALUE RegisterValue;
+	BOOLEAN bGetVirtualProcessorState;
+
+	RegisterCode = HvX64RegisterTr;
+
+	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
+		0,
+		&RegisterCode,
+		1,
+		&RegisterValue);
+
+	if (bGetVirtualProcessorState)
+	{
+		printf("GUEST REG 0x%llx\n", RegisterValue.Reg64);
+		printf("GUEST Reg128.High64 0x%llx\n", RegisterValue.Reg128.High64);
+		printf("GUEST Reg128.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
+		return RegisterValue.Reg64;
+	}
+	else
+	{
+		printf("GUEST GDTR get error", RegisterValue.Reg64);
+		return 1;
+	}
+}
+
 MACHINE_TYPE MachineType = MACHINE_UNKNOW;
 
 //
@@ -251,26 +283,32 @@ GetMachineType(PHVDD_PARTITION PartitionEntry)
 {
 HV_REGISTER_NAME RegisterCode;
 HV_REGISTER_VALUE RegisterValue;
+BOOLEAN bGetVirtualProcessorState;
 
     if (MachineType != MACHINE_UNKNOW) return MachineType;
 
     RegisterCode = HvX64RegisterRip;
 
-    if (VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
-                                    0,
-                                    &RegisterCode,
-                                    1,
-                                    &RegisterValue))
+	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
+		0,
+		&RegisterCode,
+		1,
+		&RegisterValue);
+
+    if (bGetVirtualProcessorState)
     {
         if (RegisterValue.Reg64 >= 0x100000000ULL)
         {
             PartitionEntry->KiExcaliburData.MachineType = MACHINE_AMD64;
             MachineType = MACHINE_AMD64;
+			printf("MachineType = MACHINE_AMD64\n");
+			printf("RegisterValue.Reg64 = 0x%llx\n", RegisterValue.Reg64);
         }
         else
         {
             PartitionEntry->KiExcaliburData.MachineType = MACHINE_AMD64;
             MachineType = MACHINE_X86;
+			printf("MachineType = MACHINE_X86\n");
         }
     }
 
@@ -330,12 +368,12 @@ ULONG64 DirectoryTable;
 BOOL
 KdFindDbgDataBlock(PHVDD_PARTITION PartitionEntry)
 {
-PKDDEBUGGER_DATA64 DbgData;
+	PKDDEBUGGER_DATA64 DbgData = {0};
 
 ULONG64 Base, Va;
 PULONG Page;
 
-ULONG Index, DwIndex, TryId;
+ULONG Index = 0, DwIndex, TryId;
 
 BOOL Ret;
 
@@ -396,15 +434,28 @@ TryAgainWith3GB:
     }
     else if (VmType == MACHINE_AMD64)
     {
-        Base = 0xfffff80000000000ULL;
-        for (Index = 0; Index < 0x10000; Index += 1, Base += PAGE_SIZE)
+		//GetGuestReg(PartitionEntry);
+		//Base = 0xfffff80000000000ULL;
+		Base = (GetGuestReg(PartitionEntry)) & 0xfffffFFFF0000000ULL;
+		printf("Scan base = 0x%llx\n", Base);
+        for (Index = 0; Index < 0x1000000; Index += 1, Base += PAGE_SIZE)
         {
             Ret = MmReadVirtualAddress(PartitionEntry,
                                        Base,
                                        Page,
                                        PAGE_SIZE);
-            if (Ret == FALSE) continue;
 
+			if (Ret == FALSE) {
+				//printf("Error during MmReadVirtualAddress 0x%llx \n", Base);
+				continue;
+			}
+				
+			//printf("KdFindDbgDataBlock.Base 0x%p\n", Base);
+			
+			if (Index & 0xFF == 0) {
+				printf("    index = 0x%d\n", Index);
+				printf("    Scan base = 0x%llx\n", Base);
+			}
             for (DwIndex = 4; DwIndex < (PAGE_SIZE / sizeof(ULONG)); DwIndex += 1)
             {
                 if (Page[DwIndex] == KDBG_TAG)
@@ -423,8 +474,8 @@ TryAgainWith3GB:
                 }
             }
         }
+		printf("Index too small 0x%x\n", Index);
     }
-
     if (Ret == FALSE) goto Exit;
 
 Success:

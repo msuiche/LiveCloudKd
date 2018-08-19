@@ -27,6 +27,93 @@ PHVDD_PARTITION PartitionTable = NULL;
 ULONG PartitionCount = 0;
 ULONG MaxPartitionCount = 64;
 
+typedef LONG NTSTATUS, *PNTSTATUS;
+#define STATUS_SUCCESS (0x00000000)
+typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+
+
+RTL_OSVERSIONINFOW GetRealOSVersion() {
+		HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+		if (hMod) {
+			RtlGetVersionPtr fxPtr = GetProcAddress(hMod, "RtlGetVersion");
+			if (fxPtr != NULL) {
+				RTL_OSVERSIONINFOW rovi = { 0 };
+				rovi.dwOSVersionInfoSize = sizeof(rovi);
+				if (fxPtr(&rovi) == STATUS_SUCCESS) {
+					printf("rovi.dwBuildNumber : %08d\n", rovi.dwBuildNumber);
+					printf("rovi.dwMajorVersion : %08d\n", rovi.dwMajorVersion);
+					printf("rovi.dwMinorVersion : %08d\n", rovi.dwMinorVersion);
+					return rovi;
+				}
+			}
+		}
+	RTL_OSVERSIONINFOW rovi = { 0 };	
+	return rovi;
+}
+
+
+
+BOOL
+
+HvlckdGetPartitionFriendlyName(PHVDD_PARTITION PartitionEntry,
+	HANDLE PartitionHandle)
+{
+	LPCWSTR wszPath = L"\\\\.\\hvlckd";
+	HANDLE hDevice = INVALID_HANDLE_VALUE;  // handle to the drive to be examined 
+	BOOL bResult = FALSE;                 // results flag
+	DWORD junk = 0;                     // discard results
+	PVOID pOutBuf = NULL;
+	DWORD dwOutBufSize = 0x200; //Vid.sys info
+	ULONG bytesReturned;
+
+	GetRealOSVersion();
+	pOutBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwOutBufSize);
+	if (!pOutBuf) {
+		wprintf(L"HvlckdGetPartitionFriendlyName HeapAlloc error\n");
+		return FALSE;
+	}
+	hDevice = CreateFileW(wszPath,          // drive to open
+		GENERIC_READ|GENERIC_WRITE,                
+		FILE_SHARE_READ | // share mode
+		FILE_SHARE_WRITE,
+		NULL,             // default security attributes
+		OPEN_EXISTING,    // disposition
+		FILE_ATTRIBUTE_NORMAL,                // file attributes
+		0);            // do not copy file attributes
+
+	if (!hDevice)    // cannot open the drive
+	{
+		printf("Error in CreateFile : %x\n", GetLastError());
+		return FALSE;
+	}
+
+	bResult = DeviceIoControl(hDevice,                       // device to be queried
+		IOCTL_GET_FRIENDLY_PARTIION_NAME, // operation to perform
+		&PartitionHandle, 
+		sizeof(PartitionHandle),                       
+		pOutBuf, 
+		dwOutBufSize,            // output buffer
+		&bytesReturned,                         // # bytes returned
+		NULL);          // synchronous I/O
+	if (!bResult)
+		{
+			printf("Error in DeviceIoControl : %08X\n", GetLastError());
+			return FALSE;
+		}
+	printf("Bytes returned : %08X\n", bytesReturned);
+	if (bytesReturned > 0) {
+		PartitionEntry->PartitionHandle = PartitionHandle;
+		RtlCopyMemory(PartitionEntry->FriendlyName, pOutBuf, dwOutBufSize*2);
+		//wprintf("VMName: \n", &PartitionEntry->FriendlyName);
+		CloseHandle(hDevice);
+		return TRUE;
+	}
+	CloseHandle(hDevice);
+	return FALSE;
+}
+
+
+
 BOOL
 GetPartitionFriendlyName(PHVDD_PARTITION PartitionEntry,
                          HANDLE PartitionHandle)
@@ -36,17 +123,18 @@ BOOL Ret;
     Ret = FALSE;
     RtlZeroMemory(PartitionEntry->FriendlyName, sizeof(PartitionEntry->FriendlyName));
 
-    Ret = VidGetPartitionFriendlyName(PartitionHandle,
-                                      PartitionEntry->FriendlyName,
-                                      sizeof(PartitionEntry->FriendlyName));
+    //Ret = VidGetPartitionFriendlyName(PartitionHandle,
+    //                                  PartitionEntry->FriendlyName,
+     //                                 sizeof(PartitionEntry->FriendlyName));
 
     if (Ret == TRUE)
     {
         PartitionEntry->PartitionHandle = PartitionHandle;
     }
+	White("You use unfriendly Windows version, where VidGetPartitionFriendlyName is denied\n");
 
     return Ret;
-}
+} 
 
 BOOL
 IsPartitionHandle(PHVDD_PARTITION PartitionEntry,
@@ -105,18 +193,27 @@ BOOL Ret;
             // GetPartitionFriendlyName() fill PartitionEntry with the PartitionHandle
             // and with the friendly name.
             //
-            if (GetPartitionFriendlyName(PartitionEntry, DuplicatedHandle) == TRUE)
-            {
-                Ret = TRUE;
-            }
+            //if (GetPartitionFriendlyName(PartitionEntry, DuplicatedHandle) == TRUE)
+            //{
+            //    Ret = TRUE;
+            //}
+			//HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle);
+			wprintf(L"DuplicatedHandle - %d\n", (ULONG) DuplicatedHandle);
+			if (HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle) == TRUE)
+			{
+				Ret = TRUE;
+			}
         }
     }
 
 Exit:
     if (pObjectNameInformation) free(pObjectNameInformation);
     if (pObjectTypeInformation) free(pObjectTypeInformation);
-
-    return Ret;
+	//too many handle for WDAG vmwp.exe. Probably, uncomment for release 
+	//if (Ret == FALSE){
+	//	CloseHandle(DuplicatedHandle);
+	//}
+	return Ret;
 }
 
 BOOL
@@ -226,7 +323,7 @@ Exit:
 PHVDD_PARTITION
 GetPartitions(PULONG PartitionTableCount)
 {
-HANDLE SnapshotHandle;
+HANDLE SnapshotHandle = NULL;
 PROCESSENTRY32 ProcessEntry;
 
 BOOL Ret;

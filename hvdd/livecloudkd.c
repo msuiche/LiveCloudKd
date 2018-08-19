@@ -28,8 +28,26 @@ Revision History:
 BOOL UseWinDbg = FALSE;
 LPCWSTR DestinationPath = NULL;
 ULONG Action = -1;
+//lpNtQuerySystemInformation NtQuerySystemInformation = NULL;
+//lpNtDuplicateObject NtDuplicateObject = NULL;
 
 CHAR Disclamer[] = ".Reverse Engineering of this program is prohibited. Please respect intellectual property. The code of this program and techniques involved belongs to MoonSols SARL and Matthieu Suiche.\n";
+
+//BOOLEAN
+//GetImportFuntions()
+//{
+//	static HMODULE hNtdll;
+//	hNtdll = LoadLibrary("ntdll");
+//	lpNtQuerySystemInformation NtQuerySystemInformation = GetProcAddress(hNtdll, "NtQuerySystemInformation");
+//	if (NtQuerySystemInformation != STATUS_SUCCESS) {
+//		Red("Error during GetProcAddress(hNtdll, \"NtQuerySystemInformation\")");
+//		return FALSE;
+//	}
+//
+//	//static lpNtQuerySystemInformation NtQuerySystemInformation = NULL;
+//	//static lpNtDuplicateObject NtDuplicateObject = NULL;
+//	//return TRUE;
+//}
 
 VOID
 Help()
@@ -106,12 +124,17 @@ USHORT Color;
           L"      Copyright (C) 2010, MoonSols SARL <http://www.moonsols.com>\n"
           L"      Copyright (C) 2010, Matthieu Suiche\n"
           L"      Copyright (C) 2016, Comae Technologies FZE <http://www.comae.io> - Revived for Paula Januszkiewicz & her Ignite's talk\n"
+#ifdef MATTHIEU_SUICHE_WAS_EATTEN_BY_CROCODILES_IN_KENYA_2018
+		//write some good words about that great cheerful guy.
+#endif 
           L"      This surprisingly still works after 6 years, 100%% User-Land - Send comments to support@comae.io\n"
           L"      All rights reserved.\n\n");
 
     SetConsoleTitle(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
 
-    ParseArguments(argc, argv);
+	//GetImportFuntions();
+	
+	ParseArguments(argc, argv);
 
     Partitions = GetPartitions(&PartitionCount);
 
@@ -144,7 +167,7 @@ USHORT Color;
         goto Exit;
     }
 
-    wprintf(L"   You selected the following virtual machine : ");
+    wprintf(L"   You selected the following virtual machine: ");
     Green(L"%s\n", Partitions[VmId].FriendlyName);
 
     White(L"\n"
@@ -156,11 +179,12 @@ USHORT Color;
     if (Action == -1)
     {
         ActionId = 0;
+		//FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+		White(L"\n"
+			L"   Please select the Action ID\n"
+			L"   > ");
         while ((ActionId < '0') || (ActionId > '2'))
         {
-            White(L"\n"
-                  L"   Please select the Action ID\n"
-                  L"   > ");
             ActionId = _getch();
         }
 

@@ -223,7 +223,7 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     ULONG HeaderSize;
     PVOID Header;
 
-    HANDLE HvddFile;
+    HANDLE HvddFile = NULL;
 
     MB_HANDLE MemoryBlockHandle;
     ULONG64 PageCountTotal;

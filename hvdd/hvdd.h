@@ -40,10 +40,16 @@ Revision History:
 
 #include "hooker.h"
 
+
+#define IOCTL_GET_FRIENDLY_PARTIION_NAME CTL_CODE(\
+	FILE_DEVICE_UNKNOWN, 0x820, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 #define VID_PARTITION_FRIENDLY_NAME_MAX (256)
 #define HANDLE_COUNT_DELTA (512)
 
 #define BLOCK_SIZE (1024 * 1024)
+
+#define LARGE_PAGE_SIZE 0x1000
 
 typedef struct _HVDD_MEMORY_BLOCK {
     MB_HANDLE MemoryHandle;
@@ -62,6 +68,9 @@ typedef struct _HVDD_PARTITION {
     PHVDD_MEMORY_BLOCK MemoryBlockTable;
     EXCALIBUR_DATA KiExcaliburData;
 } HVDD_PARTITION, *PHVDD_PARTITION;
+
+#define XMM_ALIGN16 __declspec(align(16)) 
+#define XMM_ALIGN64 __declspec(align(64)) 
 
 #define DUMP_COMMENT_STRING "Hyper-V Memory Dump. (c) 2010 MoonSols SARL <http://www.moonsols.com>"
 

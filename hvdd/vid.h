@@ -449,14 +449,14 @@ VidSetPartitionProperty(
     __in UINT64 PropertyValue
     );
 
-VIDDLLAPI
-BOOL
-WINAPI
-VidGetPartitionFriendlyName(
-    __in PT_HANDLE PartitionHandle,
-    __out_ecount(FriendlyNameLengthInChars) WCHAR* FriendlyName,
-    __in UINT32 FriendlyNameLengthInChars
-    );
+//VIDDLLAPI // was removed in Win 10 1709 and above
+//BOOL
+//WINAPI
+//VidGetPartitionFriendlyName(
+//    __in PT_HANDLE PartitionHandle,
+//    __out_ecount(FriendlyNameLengthInChars) WCHAR* FriendlyName,
+//    __in UINT32 FriendlyNameLengthInChars
+//    );
 
 VIDDLLAPI
 BOOL
