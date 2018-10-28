@@ -133,6 +133,7 @@ USHORT Color;
     SetConsoleTitle(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
 
 	//GetImportFuntions();
+	printf("size of FUNCTION_TABLE is %x\n", (sizeof(FUNCTION_TABLE)));
 	
 	ParseArguments(argc, argv);
 

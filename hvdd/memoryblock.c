@@ -377,6 +377,7 @@ GetMemoryBlocks(
         if (Blocks[i].IsMemoryBlock == TRUE)
         {
              PartitionEntry->MemoryBlockTable[j] = Blocks[i];
+			 PartitionEntry->MemoryBlockTable[j].PageCountTotal = VM_PAGE_COUNT; // HARDCODED HACK
 
             if (i == MainMemoryBlockIndex)
             {
@@ -450,8 +451,9 @@ BOOL Ret;
 
     if (Size < PAGE_SIZE) return FALSE;
 
-	printf("VidTranslateGvaToGpa was called\n");
-	Va = 0xfffff8004fc0c000;
+	//printf("VidTranslateGvaToGpa was called\n");
+	//printf(" VidTranslateGvaToGpa.Va = 0x%llx\n", Va);
+	//Va = 0xfffff802bb03b530;
 	GvaPage = Va / PAGE_SIZE;
 
     Ret = VidTranslateGvaToGpa(PartitionEntry->PartitionHandle,
@@ -470,32 +472,59 @@ BOOL Ret;
 		return FALSE;
 	}
 
-	printf("GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
-	printf( " VidTranslateGvaToGpa result: 0x%x\n", Ret);
+	//printf("GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
+	//printf( " VidTranslateGvaToGpa result: 0x%x\n", Ret);
 		
-	printf("  MmReadPageAtVirtualAddress->Va 0x%p\n", Va);
-	
-	printf("  GpaPage = 0x%x\n", GpaPage);
-	printf("  MemoryBlockPageIndex = 0x%Ix\n", MemoryBlockPageIndex);
-	printf("  Handler = 0x%p\n", Handler);
-	printf("  MemoryBlockGpaRangeFlags = 0x%x\n", MemoryBlockGpaRangeFlags);
-    MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle;
+	/*if (GpaPage != 0) {
+		printf("  MmReadPageAtVirtualAddress->Va 0x%p\n", Va);
+		printf("  GpaPage = 0x%x\n", GpaPage);
+		printf("  MemoryBlockPageIndex = 0x%Ix\n", MemoryBlockPageIndex);
+		printf("  GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
+
+	}*/
+	//printf("  Handler = 0x%p\n", Handler);
+	//printf("  MemoryBlockGpaRangeFlags = 0x%x\n", MemoryBlockGpaRangeFlags);
+    //MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle;
 	//MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MainMemoryBlockIndex;
-	printf("MemoryBlockHandle 0x%x\n", PartitionEntry->MainMemoryBlockIndex);
-	for (size_t i = 0; i < 0x10; i++)
-	{
-		Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
-			//MemoryBlockHandle,
-			(MB_HANDLE)i,
-			MemoryBlockPageIndex,
-			1ULL,
-			Buffer,
-			Size);
-		if (Ret == TRUE) {
-			printf("VidReadMemoryBlockPageRange true, handle = 0%x\n",i);
-			//return FALSE;
-		}
-	}
+	//printf("MemoryBlockHandle 0x%x\n", PartitionEntry->MainMemoryBlockIndex);
+	//Ret = FALSE;
+	//i = 0;
+	//while (Ret == FALSE) {
+	//	Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
+	//		//MemoryBlockHandle,
+	//		(MB_HANDLE)i,
+	//		MemoryBlockPageIndex,
+	//		1ULL,
+	//		Buffer,
+	//		Size);
+	//	i = (UINT64)i+1;
+	//}
+	//for (size_t i = 1; i < 0x10; i++)
+	//{
+	//	Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
+	//		//MemoryBlockHandle,
+	//		(MB_HANDLE)i,
+	//		MemoryBlockPageIndex,
+	//		1ULL,
+	//		Buffer,
+	//		Size);
+	//	if (Ret == TRUE) {
+	//		//printf("VidReadMemoryBlockPageRange true, handle = 0%x\n",i);
+	//		if (i != 1) {
+	//			printf("VidReadMemoryBlockPageRange Handle is not equal 1, and i = 0%x\n", i);
+	//		}
+	//		return TRUE;
+	//	}
+	//}
+
+	Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
+		//MemoryBlockHandle,
+		(MB_HANDLE)1,
+		MemoryBlockPageIndex,
+		1ULL,
+		Buffer,
+		Size);
+
     return Ret;
 }
 

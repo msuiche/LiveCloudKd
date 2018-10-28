@@ -262,8 +262,9 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
 
     if (HvddFile == INVALID_HANDLE_VALUE) goto Exit;
 
-    MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle;
+    //MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle; //must be rewritten. Unuseful
     PageCountTotal = PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].PageCountTotal;
+	//PageCountTotal = VM_PAGE_COUNT; // HARDCODED_VALUE for SPECIFIC VIRTUAL MACHINE
 
     FunctionTable._LoadLibrary = LoadLibraryW;
     FunctionTable._GetProcAddress = GetProcAddress;
@@ -285,7 +286,8 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     FunctionTable.CrashDumpHandle = INVALID_HANDLE_VALUE;
     FunctionTable.HeaderSize = HeaderSize;
     FunctionTable.Header = Header;
-    FunctionTable.MemoryHandle = MemoryBlockHandle;
+   // FunctionTable.MemoryHandle = MemoryBlockHandle;
+	FunctionTable.MemoryHandle = NULL;
     FunctionTable.PartitionHandle = PartitionEntry->PartitionHandle;
     FunctionTable.FileSize.QuadPart = PageCountTotal * PAGE_SIZE + HeaderSize;
 
@@ -318,7 +320,9 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     ContextPa = MmGetPhysicalAddress(PartitionEntry, ContextVa);
 
     FunctionTable.ContextPageIndex = (ULONG)(ContextPa.QuadPart / PAGE_SIZE);
+	printf("FunctionTable.ContextPageIndex %x \n", FunctionTable.ContextPageIndex);
     FunctionTable.ContextOffsetLow = (ContextPa.LowPart & (PAGE_SIZE - 1));
+	printf("FunctionTable.ContextOffsetLow %x \n", FunctionTable.ContextOffsetLow);
 
     FunctionTable.MachineType = GetMachineType(PartitionEntry);
 

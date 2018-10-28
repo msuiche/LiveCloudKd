@@ -4379,6 +4379,14 @@ typedef enum _HV_REGISTER_NAME
     // Pending Interruption Register
     HvX64RegisterPendingInterruption    = 0x00010002,
 
+	// Guest Crash Registers 
+	HvRegisterGuestCrashP0 = 0x00000210,
+	HvRegisterGuestCrashP1 = 0x00000211,
+	HvRegisterGuestCrashP2 = 0x00000212,
+	HvRegisterGuestCrashP3 = 0x00000213,
+	HvRegisterGuestCrashP4 = 0x00000214,
+	HvRegisterGuestCrashCtl = 0x00000215,
+
     // Interrupt State register
     HvX64RegisterInterruptState         = 0x00010003,
 

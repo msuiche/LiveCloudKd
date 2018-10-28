@@ -32,27 +32,83 @@ UINT64 GetGuestReg(PHVDD_PARTITION PartitionEntry)
 	HV_REGISTER_NAME RegisterCode;
 	HV_REGISTER_VALUE RegisterValue;
 	BOOLEAN bGetVirtualProcessorState;
+	PULONG64 lPage = NULL;
+	BOOL Ret;
+	ULONG64 uAddr01, uAddr02, uAddr = { 0 };
 
-	RegisterCode = HvX64RegisterTr;
 
-	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
-		0,
-		&RegisterCode,
-		1,
-		&RegisterValue);
+	//RegisterCode = HvX64RegisterLdtr;
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,0,&RegisterCode,1,&RegisterValue);
+	//printf("GUEST HvX64RegisterLdtr 0x%llx\n", RegisterValue.Reg64);
 
-	if (bGetVirtualProcessorState)
-	{
-		printf("GUEST REG 0x%llx\n", RegisterValue.Reg64);
-		printf("GUEST Reg128.High64 0x%llx\n", RegisterValue.Reg128.High64);
-		printf("GUEST Reg128.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
-		return RegisterValue.Reg64;
+	RegisterCode = HvX64RegisterIdtr;
+	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+	printf("GUEST HvX64RegisterIdtr 0x%llx\n", RegisterValue.Reg64);
+	printf("GUEST HvX64RegisterIdtr.High64 0x%llx\n", RegisterValue.Reg128.High64);
+	printf("GUEST HvX64RegisterIdtr.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
+
+	lPage = (PULONG)malloc(PAGE_SIZE);
+	if (lPage == NULL) {
+		printf("GuestReg malloc is false\n");
+		return FALSE;
 	}
-	else
-	{
-		printf("GUEST GDTR get error", RegisterValue.Reg64);
-		return 1;
+	
+	Ret = MmReadVirtualAddress(PartitionEntry,
+		RegisterValue.Reg128.High64,
+		lPage,
+		PAGE_SIZE);
+
+	uAddr01 = *lPage;
+	uAddr02 = *(lPage+1);
+	uAddr = ((uAddr02 & 0xFFFFFFFF)<<32) | ((uAddr01 & 0xFFFFFFFF00000000)>>32);
+
+	if (uAddr == 0) {
+		printf("GuestReg uAddr error\n");
+		return FALSE;
 	}
+	else {
+		free(lPage);
+		return uAddr;
+	}
+
+	//RegisterCode = HvX64RegisterTr;
+
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
+	//	0,
+	//	&RegisterCode,
+	//	1,
+	//	&RegisterValue);
+
+	//if (bGetVirtualProcessorState)
+	//{
+	//	printf("GUEST REG 0x%llx\n", RegisterValue.Reg64);
+	//	printf("GUEST Reg128.High64 0x%llx\n", RegisterValue.Reg128.High64);
+	//	printf("GUEST Reg128.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
+	//	return RegisterValue.Reg64;
+	//}
+	//else
+	//{
+	//	printf("GUEST GDTR get error", RegisterValue.Reg64);
+	//	return 1;
+	//}
+	//RegisterCode = HvX64RegisterGdtr;
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+	//printf("GUEST HvX64RegisterGdtr 0x%llx\n", RegisterValue.Reg64);
+
+	//RegisterCode = HvRegisterGuestCrashP0;
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+	//printf("GUEST HvRegisterGuestCrashP0 0x%llx\n", RegisterValue.Reg64);
+	//RegisterCode = HvX64RegisterStar;
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+	//printf("GUEST HvX64RegisterStar 0x%llx\n", RegisterValue.Reg64);
+	//	
+	//	RegisterCode = HvX64RegisterKernelGsBase;
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+	//printf("GUEST HvX64RegisterKernelGsBase 0x%llx\n", RegisterValue.Reg64);
+
+	//RegisterCode = HvX64RegisterSysenterEip;
+	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+	//printf("GUEST HvX64RegisterSysenterRip 0x%llx\n", RegisterValue.Reg64);
 }
 
 MACHINE_TYPE MachineType = MACHINE_UNKNOW;
@@ -287,7 +343,8 @@ BOOLEAN bGetVirtualProcessorState;
 
     if (MachineType != MACHINE_UNKNOW) return MachineType;
 
-    RegisterCode = HvX64RegisterRip;
+    //RegisterCode = HvX64RegisterRip;
+	RegisterCode = HvX64RegisterTr;
 
 	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
 		0,
@@ -309,6 +366,7 @@ BOOLEAN bGetVirtualProcessorState;
             PartitionEntry->KiExcaliburData.MachineType = MACHINE_AMD64;
             MachineType = MACHINE_X86;
 			printf("MachineType = MACHINE_X86\n");
+			printf("RegisterValue.Reg64 = 0x%llx\n", RegisterValue.Reg64);
         }
     }
 
@@ -436,9 +494,10 @@ TryAgainWith3GB:
     {
 		//GetGuestReg(PartitionEntry);
 		//Base = 0xfffff80000000000ULL;
-		Base = (GetGuestReg(PartitionEntry)) & 0xfffffFFFF0000000ULL;
+		//Base = (GetGuestReg(PartitionEntry)) & 0xfffffFFFF0000000ULL;
+		Base = ((GetGuestReg(PartitionEntry)) - 0x1000000*8) & 0xfffffFFFFFFFF000ULL;
 		printf("Scan base = 0x%llx\n", Base);
-        for (Index = 0; Index < 0x1000000; Index += 1, Base += PAGE_SIZE)
+        for (Index = 0; Index < 0x100000; Index += 1, Base += PAGE_SIZE)
         {
             Ret = MmReadVirtualAddress(PartitionEntry,
                                        Base,
@@ -446,7 +505,7 @@ TryAgainWith3GB:
                                        PAGE_SIZE);
 
 			if (Ret == FALSE) {
-				//printf("Error during MmReadVirtualAddress 0x%llx \n", Base);
+				printf("Error during MmReadVirtualAddress 0x%llx \n", Base);
 				continue;
 			}
 				
@@ -461,7 +520,7 @@ TryAgainWith3GB:
                 if (Page[DwIndex] == KDBG_TAG)
                 {
                     DbgData = (PKDDEBUGGER_DATA64)((PUCHAR)(&Page[DwIndex]) - sizeof(LIST_ENTRY64));
-
+					printf("   KDBG struct was founded\n");
                     if (DbgData->Header.Size >= 0x400) continue;
 
                     if (DbgData->Header.List.Blink != DbgData->Header.List.Flink) continue;
@@ -635,17 +694,29 @@ HANDLE ThreadHandle[0xFFFF];
                    L"windbg.exe -z \"%s\"", DumpFile);
     }
 
-    if (!CreateProcess(NULL,
-        CommandLine,
-        NULL,
-        NULL,
-        FALSE,
-        DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS,
-        NULL,
-        NULL,
-        &si,
-        &pi)
-    ) 
+    //if (!CreateProcess(NULL,
+    //    CommandLine,
+    //    NULL,
+    //    NULL,
+    //    FALSE,
+    //    DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS,
+    //    NULL,
+    //    NULL,
+    //    &si,
+    //    &pi)
+    //) 
+
+	if (!CreateProcess(NULL,
+	    CommandLine,
+	    NULL,
+	    NULL,
+	    TRUE,
+	    DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS,
+	    NULL,
+	    NULL,
+	    &si,
+	    &pi)
+	) 
     {
         if (GetLastError() == ERROR_FILE_NOT_FOUND)
         {
