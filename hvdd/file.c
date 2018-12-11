@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    - 
+    -
 
 
 Environment:
@@ -22,28 +22,30 @@ Revision History:
 --*/
 #include "hvdd.h"
 
-BOOL
-CreateDestinationFile(LPCWSTR Filename,
-                      PHANDLE Handle)
+BOOLEAN
+CreateDestinationFile(
+    _In_ LPCWSTR Filename,
+    _Out_ PHANDLE Handle
+)
 {
     *Handle = CreateFileW(Filename,
-                         GENERIC_WRITE,
-                         0,
-                         NULL,
-                         CREATE_ALWAYS,
-                         FILE_FLAG_NO_BUFFERING,
-                         NULL);
+        GENERIC_WRITE,
+        0,
+        NULL,
+        CREATE_ALWAYS,
+        FILE_FLAG_NO_BUFFERING,
+        NULL);
 
     if (Handle == INVALID_HANDLE_VALUE) return FALSE;
 
     return TRUE;
 }
 
-BOOL
+BOOLEAN
 WriteFileSynchronous(
-    HANDLE Handle,
-    PVOID Buffer,
-    ULONG NbOfBytesToWrite
+    _In_ HANDLE Handle,
+    _In_ PVOID Buffer,
+    _In_ ULONG NbOfBytesToWrite
 )
 /*++
 
@@ -67,19 +69,17 @@ Return Value:
 
 --*/
 {
-DWORD WrittenBytes;
-BOOL Ret;
-
-    WrittenBytes = 0;
-    Ret = FALSE;
+    DWORD WrittenBytes = 0;
+    BOOLEAN Ret;
+    DWORD Status;
 
     Ret = WriteFile(Handle, Buffer, NbOfBytesToWrite, &WrittenBytes, NULL);
     if ((Ret == FALSE) && (GetLastError() == ERROR_IO_PENDING))
     {
         do
         {
-            Ret = WaitForSingleObjectEx(Handle, INFINITE, TRUE);
-        } while (Ret == WAIT_IO_COMPLETION);
+            Status = WaitForSingleObjectEx(Handle, INFINITE, TRUE);
+        } while (Status == WAIT_IO_COMPLETION);
     }
 
     if (WrittenBytes == NbOfBytesToWrite)

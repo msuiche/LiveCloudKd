@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    - 
+    -
 
 
 Environment:
@@ -23,27 +23,29 @@ Revision History:
 
 #include "hvdd.h"
 
-BOOL
-EnablePrivilege(WCHAR *PrivilegeName)
+BOOLEAN
+EnablePrivilege(
+    _In_ WCHAR *PrivilegeName
+)
 {
-HANDLE ProcessToken;
-TOKEN_PRIVILEGES TokenPrivileges;
+    HANDLE ProcessToken;
+    TOKEN_PRIVILEGES TokenPrivileges;
 
-BOOL Ret;
+    BOOLEAN Ret;
 
     Ret = FALSE;
 
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &ProcessToken))
     {
         wprintf(L"EnablePrivilege - OpenProcessToken(Error = %d)\n",
-                GetLastError());
+            GetLastError());
         goto Exit;
     }
 
     if (!LookupPrivilegeValueW(NULL, PrivilegeName, &TokenPrivileges.Privileges[0].Luid))
     {
         wprintf(L"EnablePrivilege - LookupPrivilegeValue(Error = %d)\n",
-                GetLastError());
+            GetLastError());
         goto Exit;
     }
 
@@ -51,10 +53,10 @@ BOOL Ret;
     TokenPrivileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
     if (!AdjustTokenPrivileges(ProcessToken, FALSE, &TokenPrivileges,
-                              0, NULL, NULL))
+        0, NULL, NULL))
     {
         wprintf(L"EnablePrivilege - AdjustTokenPrivileges(Error = %d)\n",
-                GetLastError());
+            GetLastError());
         goto Exit;
     }
 
@@ -67,23 +69,25 @@ Exit:
 }
 
 ULONG
-GetHandleCount()
+GetHandleCount(
+    VOID
+)
 {
-	PSYSTEM_PROCESS_INFORMATION pSystemProcessInfo, Entry;
-	ULONG BytesRet;
+    PSYSTEM_PROCESS_INFORMATION pSystemProcessInfo, Entry;
+    ULONG BytesRet;
 
-	NTSTATUS NtStatus;
+    NTSTATUS NtStatus;
 
-	ULONG HandleCount;
+    ULONG HandleCount;
 
     pSystemProcessInfo = NULL;
     HandleCount = 0;
     BytesRet = 0;
 
     NtStatus = NtQuerySystemInformation(SystemProcessInformation,
-                                        pSystemProcessInfo,
-                                        0,
-                                        &BytesRet);
+        pSystemProcessInfo,
+        0,
+        &BytesRet);
 
     if (NtStatus != STATUS_INFO_LENGTH_MISMATCH) goto Exit;
 
@@ -92,9 +96,9 @@ GetHandleCount()
     if (pSystemProcessInfo == NULL) goto Exit;
 
     NtStatus = NtQuerySystemInformation(SystemProcessInformation,
-                                        pSystemProcessInfo,
-                                        BytesRet,
-                                        &BytesRet);
+        pSystemProcessInfo,
+        BytesRet,
+        &BytesRet);
 
     if (NtStatus != STATUS_SUCCESS) goto Exit;
 
@@ -118,7 +122,9 @@ Exit:
 }
 
 HANDLE
-OpenProcessWithId(HANDLE ProcessId)
+OpenProcessWithId(
+    _In_ HANDLE ProcessId
+)
 {
     OBJECT_ATTRIBUTES ObjectAttributes;
     CLIENT_ID ClientId;
@@ -127,7 +133,6 @@ OpenProcessWithId(HANDLE ProcessId)
 
     RtlZeroMemory(&ObjectAttributes, sizeof(OBJECT_ATTRIBUTES));
     RtlZeroMemory(&ClientId, sizeof(CLIENT_ID));
-
 
     ClientId.UniqueProcess = ProcessId;
     InitializeObjectAttributes(&ObjectAttributes, NULL, 0, NULL, NULL);
@@ -142,16 +147,16 @@ OpenProcessWithId(HANDLE ProcessId)
     return Handle;
 }
 
-BOOL
-GetMmNonPagedPoolLimit(PULONG64 MmNonPagedPoolStart,
-                       PULONG64 MmNonPagedPoolEnd)
+BOOLEAN
+GetMmNonPagedPoolLimit(
+    _Out_ PULONG64 MmNonPagedPoolStart,
+    _Out_ PULONG64 MmNonPagedPoolEnd
+)
 {
-SYSTEM_BASIC_INFORMATION SystemInfo;
-ULONG64 PfnAllocation;
-NTSTATUS NtStatus;
-BOOL Ret;
-
-    Ret = FALSE;
+    SYSTEM_BASIC_INFORMATION SystemInfo;
+    ULONG64 PfnAllocation;
+    NTSTATUS NtStatus;
+    BOOLEAN Ret = FALSE;
 
     RtlZeroMemory(&SystemInfo, sizeof(SYSTEM_BASIC_INFORMATION));
     NtStatus = NtQuerySystemInformation(SystemBasicInformation, &SystemInfo, sizeof(SYSTEM_BASIC_INFORMATION), NULL);
@@ -170,20 +175,25 @@ Exit:
 }
 
 USHORT
-GetConsoleTextAttribute(HANDLE hConsole)
+GetConsoleTextAttribute(
+    _In_ HANDLE hConsole
+)
 {
-CONSOLE_SCREEN_BUFFER_INFO csbi;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
 
     GetConsoleScreenBufferInfo(hConsole, &csbi);
     return(csbi.wAttributes);
 }
 
 VOID
-White(LPCWSTR Format, ...)
+White(
+    _In_ LPCWSTR Format,
+    ...
+)
 {
-HANDLE Handle;
-USHORT Color;
-va_list va;
+    HANDLE Handle;
+    USHORT Color;
+    va_list va;
 
     Handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -192,17 +202,20 @@ va_list va;
     SetConsoleTextAttribute(Handle, 0xF);
     va_start(va, Format);
     vwprintf(Format, va);
-    va_end(va); 
+    va_end(va);
 
     SetConsoleTextAttribute(Handle, Color);
 }
 
 VOID
-Red(LPCWSTR Format, ...)
+Red(
+    _In_ LPCWSTR Format,
+    ...
+)
 {
-HANDLE Handle;
-USHORT Color;
-va_list va;
+    HANDLE Handle;
+    USHORT Color;
+    va_list va;
 
     Handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -211,17 +224,20 @@ va_list va;
     SetConsoleTextAttribute(Handle, FOREGROUND_RED | FOREGROUND_INTENSITY);
     va_start(va, Format);
     vwprintf(Format, va);
-    va_end(va); 
+    va_end(va);
 
     SetConsoleTextAttribute(Handle, Color);
 }
 
 VOID
-Green(LPCWSTR Format, ...)
+Green(
+    _In_ LPCWSTR Format,
+    ...
+)
 {
-HANDLE Handle;
-USHORT Color;
-va_list va;
+    HANDLE Handle;
+    USHORT Color;
+    va_list va;
 
     Handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -230,7 +246,7 @@ va_list va;
     SetConsoleTextAttribute(Handle, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
     va_start(va, Format);
     vwprintf(Format, va);
-    va_end(va); 
+    va_end(va);
 
     SetConsoleTextAttribute(Handle, Color);
 }

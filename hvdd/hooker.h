@@ -3,18 +3,18 @@ typedef int (WINAPI *pMessageBoxA)(HWND, LPCSTR, LPCSTR, UINT);
 typedef HMODULE (WINAPI *pLoadLibraryW)(LPCWSTR);
 typedef FARPROC (WINAPI *pGetProcAddress)(HMODULE, LPCSTR);
 typedef HANDLE (WINAPI *pCreateFileW)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
-typedef BOOL (WINAPI *pVidReadMemoryBlockPageRange)(HANDLE, PVOID, UINT64, UINT64, PVOID, UINT64);
-typedef BOOL (WINAPI *pVidWriteMemoryBlockPageRange)(HANDLE, PVOID, UINT64, UINT64, PVOID, UINT64);
+typedef BOOL(WINAPI *pVidReadMemoryBlockPageRange)(HANDLE, PVOID, UINT64, UINT64, PVOID, UINT64);
+typedef BOOL(WINAPI *pVidWriteMemoryBlockPageRange)(HANDLE, PVOID, UINT64, UINT64, PVOID, UINT64);
 typedef DWORD (WINAPI *pSetFilePointer)(HANDLE, LONG, PLONG, DWORD);
 typedef LPVOID (WINAPI *pVirtualAlloc)(LPVOID, SIZE_T, DWORD, DWORD);
 typedef BOOL (WINAPI *pVirtualFree)(LPVOID, SIZE_T, DWORD);
-typedef BOOL (WINAPI *pVirtualProtect)(LPVOID, SIZE_T, DWORD, PDWORD);
+typedef BOOL(WINAPI *pVirtualProtect)(LPVOID, SIZE_T, DWORD, PDWORD);
 typedef HANDLE (WINAPI *pCreateFileMappingA)(HANDLE, LPSECURITY_ATTRIBUTES, DWORD, DWORD, DWORD, LPCSTR);
 typedef HANDLE (WINAPI *pCreateFileMappingW)(HANDLE, LPSECURITY_ATTRIBUTES, DWORD, DWORD, DWORD, LPCWSTR);
 typedef LPVOID (WINAPI *pMapViewOfFile)(HANDLE, DWORD, DWORD, DWORD, SIZE_T);
-typedef BOOL (WINAPI *pUnmapViewOfFile)(LPCVOID);
+typedef BOOL(WINAPI *pUnmapViewOfFile)(LPCVOID);
 typedef DWORD (WINAPI *pGetFileSize)(HANDLE, LPDWORD);
-typedef BOOL (WINAPI *pReadFile)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+typedef BOOL(WINAPI *pReadFile)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
 
 typedef struct _MAP_FILE {
     PVOID Va;
@@ -81,7 +81,9 @@ typedef struct _FUNCTION_TABLE {
 
 extern FUNCTION_TABLE FunctionTable;
 
-HANDLE WINAPI MyCreateFile(
+HANDLE
+WINAPI
+MyCreateFile(
   __in      LPCWSTR lpFileName,
   __in      DWORD dwDesiredAccess,
   __in      DWORD dwShareMode,
@@ -91,7 +93,9 @@ HANDLE WINAPI MyCreateFile(
   __in_opt  HANDLE hTemplateFile
 );
 
-LPVOID WINAPI MyMapViewOfFile(
+LPVOID
+WINAPI
+MyMapViewOfFile(
   __in  HANDLE hFileMappingObject,
   __in  DWORD dwDesiredAccess,
   __in  DWORD dwFileOffsetHigh,
@@ -99,7 +103,9 @@ LPVOID WINAPI MyMapViewOfFile(
   __in  SIZE_T dwNumberOfBytesToMap
 );
 
-HANDLE WINAPI MyCreateFileMappingA(
+HANDLE
+WINAPI
+MyCreateFileMappingA(
   __in      HANDLE hFile,
   __in_opt  LPSECURITY_ATTRIBUTES lpAttributes,
   __in      DWORD flProtect,
@@ -108,7 +114,9 @@ HANDLE WINAPI MyCreateFileMappingA(
   __in_opt  LPCSTR lpName
 );
 
-HANDLE WINAPI MyCreateFileMappingW(
+HANDLE
+WINAPI
+MyCreateFileMappingW(
   __in      HANDLE hFile,
   __in_opt  LPSECURITY_ATTRIBUTES lpAttributes,
   __in      DWORD flProtect,
@@ -117,16 +125,22 @@ HANDLE WINAPI MyCreateFileMappingW(
   __in_opt  LPCWSTR lpName
 );
 
-BOOL WINAPI MyUnmapViewOfFile(
+BOOL
+WINAPI
+MyUnmapViewOfFile(
   __in  LPCVOID lpBaseAddress
 );
 
-DWORD WINAPI MyGetFileSize(
+DWORD
+WINAPI
+MyGetFileSize(
   __in       HANDLE hFile,
   __out_opt  LPDWORD lpFileSizeHigh
 );
 
-BOOL WINAPI MyReadFile(
+BOOL
+WINAPI
+MyReadFile(
   __in         HANDLE hFile,
   __out        LPVOID lpBuffer,
   __in         DWORD nNumberOfBytesToRead,
@@ -134,15 +148,17 @@ BOOL WINAPI MyReadFile(
   __inout_opt  LPOVERLAPPED lpOverlapped
 );
 
-BOOL WINAPI MyVirtualProtect(
+BOOL
+WINAPI
+MyVirtualProtect(
   __in   LPVOID lpAddress,
   __in   SIZE_T dwSize,
   __in   DWORD flNewProtect,
   __out  PDWORD lpflOldProtect
 );
 
-BOOL
+BOOLEAN
 HookKd(
-    HANDLE ProcessHandle,
-    ULONG ProcessId
+    _In_ HANDLE ProcessHandle,
+    _In_ ULONG ProcessId
 );

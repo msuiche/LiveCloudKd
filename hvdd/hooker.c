@@ -13,21 +13,22 @@ If the online privacy statement is not available, please read our privacy statem
   C:\Windows\system32\en-US\erofflps.txt
 
 */
-FUNCTION_TABLE FunctionTable =  {0};
+FUNCTION_TABLE FunctionTable = { 0 };
 
 #define PtrFromRva(Base, Rva) (((PBYTE) Base) + Rva )
 
-BOOL
-PatchIAT(PVOID ModuleBase,
-         LPSTR ImporteModuleName,
-         LPSTR FunctionName,
-         ULONG64 Address)
+BOOLEAN
+PatchIAT(
+    _In_ PVOID ModuleBase,
+    _In_ LPSTR ImporteModuleName,
+    _In_ LPSTR FunctionName,
+    _In_ ULONG64 Address)
 {
-PIMAGE_DOS_HEADER DosHeader;
-PIMAGE_NT_HEADERS NtHeader;
-PIMAGE_IMPORT_DESCRIPTOR ImportDescriptor;
+    PIMAGE_DOS_HEADER DosHeader;
+    PIMAGE_NT_HEADERS NtHeader;
+    PIMAGE_IMPORT_DESCRIPTOR ImportDescriptor;
 
-ULONG Index;
+    ULONG Index;
 
     DosHeader = (PIMAGE_DOS_HEADER)ModuleBase;
 
@@ -36,12 +37,12 @@ ULONG Index;
     if (NtHeader->Signature != IMAGE_NT_SIGNATURE) return FALSE;
 
     ImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)PtrFromRva(DosHeader,
-                                                    NtHeader->OptionalHeader.DataDirectory
-                                                    [IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+        NtHeader->OptionalHeader.DataDirectory
+        [IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
     for (Index = 0;
-         ImportDescriptor[Index].Characteristics != 0;
-         Index += 1)
+        ImportDescriptor[Index].Characteristics != 0;
+        Index += 1)
     {
         PSTR dllName = (PSTR)PtrFromRva(DosHeader, ImportDescriptor[Index].Name);
 
@@ -51,20 +52,20 @@ ULONG Index;
             PIMAGE_THUNK_DATA OrigThunk;
             PIMAGE_IMPORT_BY_NAME import;
 
-            if (!ImportDescriptor[Index].FirstThunk || !ImportDescriptor[ Index ].OriginalFirstThunk)
+            if (!ImportDescriptor[Index].FirstThunk || !ImportDescriptor[Index].OriginalFirstThunk)
             {
                 return FALSE;
             }
 
-            Thunk = (PIMAGE_THUNK_DATA )PtrFromRva(DosHeader, ImportDescriptor[Index].FirstThunk);
+            Thunk = (PIMAGE_THUNK_DATA)PtrFromRva(DosHeader, ImportDescriptor[Index].FirstThunk);
             OrigThunk = (PIMAGE_THUNK_DATA)PtrFromRva(DosHeader, ImportDescriptor[Index].OriginalFirstThunk);
 
             for (; OrigThunk->u1.Function != (ULONG_PTR)NULL; OrigThunk++, Thunk++)
             {
-                if (OrigThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG ) continue;
-                import = (PIMAGE_IMPORT_BY_NAME)PtrFromRva( DosHeader, OrigThunk->u1.AddressOfData);
+                if (OrigThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG) continue;
+                import = (PIMAGE_IMPORT_BY_NAME)PtrFromRva(DosHeader, OrigThunk->u1.AddressOfData);
 
-                if (strcmp(FunctionName, (PCHAR)import->Name) ==  0)
+                if (strcmp(FunctionName, (PCHAR)import->Name) == 0)
                 {
                     *((PULONG64)Thunk) = Address;
                     goto Exit;
@@ -77,15 +78,18 @@ Exit:
     return TRUE;
 }
 
-BOOL
-HookKd(HANDLE ProcessHandle, ULONG ProcessId)
+BOOLEAN
+HookKd(
+    _In_ HANDLE ProcessHandle,
+    _In_ ULONG ProcessId
+)
 {
-HANDLE ModuleSnapshot;
-MODULEENTRY32W me32;
+    HANDLE ModuleSnapshot;
+    MODULEENTRY32W me32;
 
-BOOL Ret;
+    BOOLEAN Ret;
 
-// HANDLE FileHandle;
+    // HANDLE FileHandle;
 
     Ret = FALSE;
 
@@ -102,53 +106,53 @@ BOOL Ret;
 
     while (Module32NextW(ModuleSnapshot, &me32))
     {
-        if(_wcsicmp(me32.szModule, L"dbgeng.dll") == 0)
+        if (_wcsicmp(me32.szModule, L"dbgeng.dll") == 0)
         {
-			SIZE_T size;
+            SIZE_T size;
 
-			PUCHAR Buffer, ModBase, Page;
-			ULONG Rights;
-			NTSTATUS NtStatus;
-			BOOL Status;
+            PUCHAR Buffer, ModBase, Page;
+            ULONG Rights;
+            NTSTATUS NtStatus;
+            BOOLEAN Status;
 
-			size = (4 * PAGE_SIZE) + FunctionTable.HeaderSize;
-			//Buffer = (PUCHAR)0x1;
-			Buffer = (PUCHAR)TABLE_OFFSET;
-			NtStatus = NtAllocateVirtualMemory(ProcessHandle, &Buffer, 0,
-				&size, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN,
-				PAGE_EXECUTE_READWRITE);
-			if (NtStatus != STATUS_SUCCESS) goto Exit;
+            size = (4 * PAGE_SIZE) + FunctionTable.HeaderSize;
+            //Buffer = (PUCHAR)0x1;
+            Buffer = (PUCHAR)TABLE_OFFSET;
+            NtStatus = NtAllocateVirtualMemory(ProcessHandle, &Buffer, 0,
+                &size, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN,
+                PAGE_EXECUTE_READWRITE);
+            if (NtStatus != STATUS_SUCCESS) goto Exit;
 
-			Buffer = (PUCHAR)TABLE_OFFSET;
-			Status = WriteProcessMemory(ProcessHandle, Buffer + 4 * PAGE_SIZE, FunctionTable.Header,
-				FunctionTable.HeaderSize, &size);
-			if (Status != TRUE) goto Exit;
+            Buffer = (PUCHAR)TABLE_OFFSET;
+            Status = WriteProcessMemory(ProcessHandle, Buffer + 4 * PAGE_SIZE, FunctionTable.Header,
+                FunctionTable.HeaderSize, &size);
+            if (Status != TRUE) goto Exit;
 
-			FunctionTable.Header = (PUCHAR)(Buffer + 4 * PAGE_SIZE);
-			Status = WriteProcessMemory(ProcessHandle, TABLE_OFFSET, &FunctionTable, sizeof(FUNCTION_TABLE), &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"CREATEFILE_OFFSET: %p-0x%p\n", CREATEFILE_OFFSET, (PUCHAR)CREATEFILE_OFFSET + 0x300);
-			Status = WriteProcessMemory(ProcessHandle, CREATEFILE_OFFSET, &MyCreateFile, 0x300, &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"CREATEFILEMAPPINGA_OFFSET: %p-%p\n", CREATEFILEMAPPINGA_OFFSET, (PUCHAR)CREATEFILEMAPPINGA_OFFSET + 0x100);
-			Status = WriteProcessMemory(ProcessHandle, CREATEFILEMAPPINGA_OFFSET, &MyCreateFileMappingA, 0x100, &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"CREATEFILEMAPPINGW_OFFSET: %p-%p\n", CREATEFILEMAPPINGW_OFFSET, (PUCHAR)CREATEFILEMAPPINGW_OFFSET + 0x100);
-			Status = WriteProcessMemory(ProcessHandle, CREATEFILEMAPPINGW_OFFSET, &MyCreateFileMappingW, 0x100, &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"MAPVIEWOFFILE_OFFSET: %p-%p\n", MAPVIEWOFFILE_OFFSET, (PUCHAR)MAPVIEWOFFILE_OFFSET + 0xA00);
-			Status = WriteProcessMemory(ProcessHandle, MAPVIEWOFFILE_OFFSET, &MyMapViewOfFile, 0xA00, &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"UNMAPVIEWOFFILE_OFFSET: %p-%p\n", UNMAPVIEWOFFILE_OFFSET, (PUCHAR)UNMAPVIEWOFFILE_OFFSET + 0x100);
-			Status = WriteProcessMemory(ProcessHandle, UNMAPVIEWOFFILE_OFFSET, &MyUnmapViewOfFile, 0x100, &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"GETFILESIZE_OFFSET: %p-%p\n", GETFILESIZE_OFFSET, (PUCHAR)GETFILESIZE_OFFSET + 0x100);
-			Status = WriteProcessMemory(ProcessHandle, GETFILESIZE_OFFSET, &MyGetFileSize, 0x100, &size);
-			if (Status != TRUE) goto Exit;
-			 wprintf(L"VIRTUALPROTECT_OFFSET: %p-%p\n", VIRTUALPROTECT_OFFSET, (PUCHAR)VIRTUALPROTECT_OFFSET + 0x700);
-			Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, &MyVirtualProtect, 0x700, &size);
-			// Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, "\xCC", 1, &size);
-			if (Status != TRUE) goto Exit;
+            FunctionTable.Header = (PUCHAR)(Buffer + 4 * PAGE_SIZE);
+            Status = WriteProcessMemory(ProcessHandle, TABLE_OFFSET, &FunctionTable, sizeof(FUNCTION_TABLE), &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"CREATEFILE_OFFSET: %p-0x%p\n", CREATEFILE_OFFSET, (PUCHAR)CREATEFILE_OFFSET + 0x300);
+            Status = WriteProcessMemory(ProcessHandle, CREATEFILE_OFFSET, &MyCreateFile, 0x300, &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"CREATEFILEMAPPINGA_OFFSET: %p-%p\n", CREATEFILEMAPPINGA_OFFSET, (PUCHAR)CREATEFILEMAPPINGA_OFFSET + 0x100);
+            Status = WriteProcessMemory(ProcessHandle, CREATEFILEMAPPINGA_OFFSET, &MyCreateFileMappingA, 0x100, &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"CREATEFILEMAPPINGW_OFFSET: %p-%p\n", CREATEFILEMAPPINGW_OFFSET, (PUCHAR)CREATEFILEMAPPINGW_OFFSET + 0x100);
+            Status = WriteProcessMemory(ProcessHandle, CREATEFILEMAPPINGW_OFFSET, &MyCreateFileMappingW, 0x100, &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"MAPVIEWOFFILE_OFFSET: %p-%p\n", MAPVIEWOFFILE_OFFSET, (PUCHAR)MAPVIEWOFFILE_OFFSET + 0xA00);
+            Status = WriteProcessMemory(ProcessHandle, MAPVIEWOFFILE_OFFSET, &MyMapViewOfFile, 0xA00, &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"UNMAPVIEWOFFILE_OFFSET: %p-%p\n", UNMAPVIEWOFFILE_OFFSET, (PUCHAR)UNMAPVIEWOFFILE_OFFSET + 0x100);
+            Status = WriteProcessMemory(ProcessHandle, UNMAPVIEWOFFILE_OFFSET, &MyUnmapViewOfFile, 0x100, &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"GETFILESIZE_OFFSET: %p-%p\n", GETFILESIZE_OFFSET, (PUCHAR)GETFILESIZE_OFFSET + 0x100);
+            Status = WriteProcessMemory(ProcessHandle, GETFILESIZE_OFFSET, &MyGetFileSize, 0x100, &size);
+            if (Status != TRUE) goto Exit;
+            wprintf(L"VIRTUALPROTECT_OFFSET: %p-%p\n", VIRTUALPROTECT_OFFSET, (PUCHAR)VIRTUALPROTECT_OFFSET + 0x700);
+            Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, &MyVirtualProtect, 0x700, &size);
+            // Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, "\xCC", 1, &size);
+            if (Status != TRUE) goto Exit;
 
             Page = malloc(me32.modBaseSize);
             if (Page == NULL) goto Exit;
@@ -161,21 +165,21 @@ BOOL Ret;
                 goto Exit;
             }
 
-        /*    PatchIAT(Page, "kernel32.dll", "CreateFileW", (ULONG64)(Buffer+CREATEFILE_OFFSET));
-            PatchIAT(Page, "kernel32.dll", "CreateFileMappingA", (ULONG64)(Buffer + CREATEFILEMAPPINGA_OFFSET));
-            PatchIAT(Page, "kernel32.dll", "CreateFileMappingW", (ULONG64)(Buffer + CREATEFILEMAPPINGW_OFFSET));
-            PatchIAT(Page, "kernel32.dll", "MapViewOfFile", (ULONG64)(Buffer + MAPVIEWOFFILE_OFFSET));
-            PatchIAT(Page, "kernel32.dll", "UnmapViewOfFile", (ULONG64)(Buffer + UNMAPVIEWOFFILE_OFFSET));
-            PatchIAT(Page, "kernel32.dll", "GetFileSize", (ULONG64)(Buffer + GETFILESIZE_OFFSET));
-            PatchIAT(Page, "kernel32.dll", "VirtualProtect", (ULONG64)(Buffer + VIRTUALPROTECT_OFFSET));*/
+            /*    PatchIAT(Page, "kernel32.dll", "CreateFileW", (ULONG64)(Buffer+CREATEFILE_OFFSET));
+                PatchIAT(Page, "kernel32.dll", "CreateFileMappingA", (ULONG64)(Buffer + CREATEFILEMAPPINGA_OFFSET));
+                PatchIAT(Page, "kernel32.dll", "CreateFileMappingW", (ULONG64)(Buffer + CREATEFILEMAPPINGW_OFFSET));
+                PatchIAT(Page, "kernel32.dll", "MapViewOfFile", (ULONG64)(Buffer + MAPVIEWOFFILE_OFFSET));
+                PatchIAT(Page, "kernel32.dll", "UnmapViewOfFile", (ULONG64)(Buffer + UNMAPVIEWOFFILE_OFFSET));
+                PatchIAT(Page, "kernel32.dll", "GetFileSize", (ULONG64)(Buffer + GETFILESIZE_OFFSET));
+                PatchIAT(Page, "kernel32.dll", "VirtualProtect", (ULONG64)(Buffer + VIRTUALPROTECT_OFFSET));*/
 
-			PatchIAT(Page, "kernel32.dll", "CreateFileW", (ULONG64)CREATEFILE_OFFSET);
-			PatchIAT(Page, "kernel32.dll", "CreateFileMappingA", (ULONG64)CREATEFILEMAPPINGA_OFFSET);
-			PatchIAT(Page, "kernel32.dll", "CreateFileMappingW", (ULONG64)CREATEFILEMAPPINGW_OFFSET);
-			PatchIAT(Page, "kernel32.dll", "MapViewOfFile", (ULONG64)MAPVIEWOFFILE_OFFSET);
-			PatchIAT(Page, "kernel32.dll", "UnmapViewOfFile", (ULONG64)UNMAPVIEWOFFILE_OFFSET);
-			PatchIAT(Page, "kernel32.dll", "GetFileSize", (ULONG64)GETFILESIZE_OFFSET);
-			PatchIAT(Page, "kernel32.dll", "VirtualProtect", (ULONG64)VIRTUALPROTECT_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "CreateFileW", (ULONG64)CREATEFILE_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "CreateFileMappingA", (ULONG64)CREATEFILEMAPPINGA_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "CreateFileMappingW", (ULONG64)CREATEFILEMAPPINGW_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "MapViewOfFile", (ULONG64)MAPVIEWOFFILE_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "UnmapViewOfFile", (ULONG64)UNMAPVIEWOFFILE_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "GetFileSize", (ULONG64)GETFILESIZE_OFFSET);
+            PatchIAT(Page, "kernel32.dll", "VirtualProtect", (ULONG64)VIRTUALPROTECT_OFFSET);
 
             size = 0;
             Status = VirtualProtectEx(ProcessHandle, ModBase, me32.modBaseSize, PAGE_EXECUTE_READWRITE, &Rights);
@@ -200,7 +204,7 @@ BOOL Ret;
             WriteFileSynchronous(FileHandle, Page, PAGE_SIZE);
             CloseHandle(FileHandle);
 #endif
-            free (Page);
+            free(Page);
             Ret = TRUE;
         }
     }
@@ -209,31 +213,33 @@ Exit:
     return Ret;
 }
 
-HANDLE WINAPI MyCreateFile(
-  __in      LPCWSTR lpFileName,
-  __in      DWORD dwDesiredAccess,
-  __in      DWORD dwShareMode,
-  __in_opt  LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-  __in      DWORD dwCreationDisposition,
-  __in      DWORD dwFlagsAndAttributes,
-  __in_opt  HANDLE hTemplateFile
+HANDLE
+WINAPI
+MyCreateFile(
+    __in      LPCWSTR lpFileName,
+    __in      DWORD dwDesiredAccess,
+    __in      DWORD dwShareMode,
+    __in_opt  LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    __in      DWORD dwCreationDisposition,
+    __in      DWORD dwFlagsAndAttributes,
+    __in_opt  HANDLE hTemplateFile
 )
 {
-PFUNCTION_TABLE FT;
+    PFUNCTION_TABLE FT;
 #if 0
-WCHAR DllName[11];
+    WCHAR DllName[11];
 #endif
-ULONG Index;
+    ULONG Index;
 
-HANDLE FileHandle;
+    HANDLE FileHandle;
 
     //FT = (PFUNCTION_TABLE)NULL;
-	FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     for (Index = 0; lpFileName[Index] != L'\0'; Index += 1);
 
     FileHandle = FT->_CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
-                                  dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+        dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 
     if ((lpFileName[Index - 1] == L'p') &&
         (lpFileName[Index - 2] == L'm') &&
@@ -267,41 +273,43 @@ HANDLE FileHandle;
     return FileHandle;
 }
 
-LPVOID WINAPI MyMapViewOfFile(
-  __in  HANDLE hFileMappingObject,
-  __in  DWORD dwDesiredAccess,
-  __in  DWORD dwFileOffsetHigh,
-  __in  DWORD dwFileOffsetLow,
-  __in  SIZE_T dwNumberOfBytesToMap
+LPVOID
+WINAPI
+MyMapViewOfFile(
+    __in  HANDLE hFileMappingObject,
+    __in  DWORD dwDesiredAccess,
+    __in  DWORD dwFileOffsetHigh,
+    __in  DWORD dwFileOffsetLow,
+    __in  SIZE_T dwNumberOfBytesToMap
 )
 {
-PFUNCTION_TABLE FT;
+    PFUNCTION_TABLE FT;
 
-WCHAR DllName[8];
+    WCHAR DllName[8];
 
-PUCHAR Buffer;
-LARGE_INTEGER Offset;
-ULONG Index;
-ULONG i, j;
+    PUCHAR Buffer;
+    LARGE_INTEGER Offset;
+    ULONG Index;
+    ULONG i, j;
 
-HMODULE Module;
+    HMODULE Module;
 
-ULONG64 Position;
-ULONG64 NumberOfPages, SizeToMap;
+    ULONG64 Position;
+    ULONG64 NumberOfPages, SizeToMap;
 
 #if 0
-WCHAR Str1[9];
-WCHAR Str2[9];
-WCHAR Alpha[0x11];
-ULONG lol;
+    WCHAR Str1[9];
+    WCHAR Str2[9];
+    WCHAR Alpha[0x11];
+    ULONG lol;
 #endif
 
-PUCHAR C;
-PX86_CONTEXT Context32;
-PX64_CONTEXT Context64;
+    PUCHAR C;
+    PX86_CONTEXT Context32;
+    PX64_CONTEXT Context64;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
 #if 0
     Alpha[0] = L'0';
@@ -325,8 +333,8 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     if (hFileMappingObject == (HANDLE)0x1337)
     {
-		//FT->_MessageBoxW(0, 0, 0, 0);
-		if ((dwNumberOfBytesToMap % PAGE_SIZE) != 0)
+        //FT->_MessageBoxW(0, 0, 0, 0);
+        if ((dwNumberOfBytesToMap % PAGE_SIZE) != 0)
         {
             return NULL;
         }
@@ -364,43 +372,43 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
         Position /= PAGE_SIZE;
 
 #if 0
-		//lol = (ULONG)C; //messagebox dialog box text
-		lol = (ULONG)dwFileOffsetLow;
-		Str1[7] = Alpha[(UCHAR)(lol & 0xF)];
-		Str1[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
-		Str1[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
-		Str1[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
-		Str1[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
-		Str1[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
-		Str1[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
-		Str1[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
-		Str1[8] = L'\0';
+        //lol = (ULONG)C; //messagebox dialog box text
+        lol = (ULONG)dwFileOffsetLow;
+        Str1[7] = Alpha[(UCHAR)(lol & 0xF)];
+        Str1[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
+        Str1[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
+        Str1[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
+        Str1[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
+        Str1[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
+        Str1[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
+        Str1[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
+        Str1[8] = L'\0';
 
-		//lol = (ULONG)Buffer; // messagebox dialogbox title
-		lol = (ULONG)dwFileOffsetHigh;
-		Str2[7] = Alpha[(UCHAR)(lol & 0xF)];
-		Str2[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
-		Str2[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
-		Str2[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
-		Str2[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
-		Str2[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
-		Str2[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
-		Str2[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
-		Str2[8] = L'\0';
+        //lol = (ULONG)Buffer; // messagebox dialogbox title
+        lol = (ULONG)dwFileOffsetHigh;
+        Str2[7] = Alpha[(UCHAR)(lol & 0xF)];
+        Str2[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
+        Str2[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
+        Str2[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
+        Str2[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
+        Str2[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
+        Str2[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
+        Str2[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
+        Str2[8] = L'\0';
 
-		FT->_MessageBoxW(0, Str1, Str2, 0);
+        FT->_MessageBoxW(0, Str1, Str2, 0);
 #endif
 
-		if (FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
-											//FT->MemoryHandle,
-											(MB_HANDLE)1,
-                                             Position,
-                                             NumberOfPages,
-                                             Buffer + Index,
-                                             SizeToMap))
+        if (FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
+            //FT->MemoryHandle,
+            (MB_HANDLE)1,
+            Position,
+            NumberOfPages,
+            Buffer + Index,
+            SizeToMap))
         {
-			
-			if ((FT->ContextPageIndex >= Position) &&
+
+            if ((FT->ContextPageIndex >= Position) &&
                 ((FT->ContextPageIndex < (Position + NumberOfPages))))
             {
                 C = Buffer + Index + ((FT->ContextPageIndex - (ULONG)Position)  * PAGE_SIZE);
@@ -450,19 +458,21 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
 }
 
-HANDLE WINAPI MyCreateFileMappingA(
-  __in      HANDLE hFile,
-  __in_opt  LPSECURITY_ATTRIBUTES lpAttributes,
-  __in      DWORD flProtect,
-  __in      DWORD dwMaximumSizeHigh,
-  __in      DWORD dwMaximumSizeLow,
-  __in_opt  LPCSTR lpName
+HANDLE
+WINAPI
+MyCreateFileMappingA(
+    __in      HANDLE hFile,
+    __in_opt  LPSECURITY_ATTRIBUTES lpAttributes,
+    __in      DWORD flProtect,
+    __in      DWORD dwMaximumSizeHigh,
+    __in      DWORD dwMaximumSizeLow,
+    __in_opt  LPCSTR lpName
 )
 {
-PFUNCTION_TABLE FT;
+    PFUNCTION_TABLE FT;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     if (hFile == FT->CrashDumpHandle)
     {
@@ -473,18 +483,18 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 }
 
 HANDLE WINAPI MyCreateFileMappingW(
-  __in      HANDLE hFile,
-  __in_opt  LPSECURITY_ATTRIBUTES lpAttributes,
-  __in      DWORD flProtect,
-  __in      DWORD dwMaximumSizeHigh,
-  __in      DWORD dwMaximumSizeLow,
-  __in_opt  LPCWSTR lpName
+    __in      HANDLE hFile,
+    __in_opt  LPSECURITY_ATTRIBUTES lpAttributes,
+    __in      DWORD flProtect,
+    __in      DWORD dwMaximumSizeHigh,
+    __in      DWORD dwMaximumSizeLow,
+    __in_opt  LPCWSTR lpName
 )
 {
-PFUNCTION_TABLE FT;
+    PFUNCTION_TABLE FT;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     if (hFile == FT->CrashDumpHandle)
     {
@@ -494,16 +504,18 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
     return FT->_CreateFileMappingW(hFile, lpAttributes, flProtect, dwMaximumSizeHigh, dwMaximumSizeLow, lpName);
 }
 
-BOOL WINAPI MyUnmapViewOfFile(
-  __in  LPCVOID lpBaseAddress
+BOOL
+WINAPI
+MyUnmapViewOfFile(
+    __in  LPCVOID lpBaseAddress
 )
 {
-PFUNCTION_TABLE FT;
-ULONG i;
-BOOL Status;
+    PFUNCTION_TABLE FT;
+    ULONG i;
+    BOOLEAN Status;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     for (i = 0; i < 20; i += 1)
     {
@@ -513,7 +525,7 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
             FT->MapFile[i].Pa.QuadPart = 0;
             FT->MapFile[i].Size = 0;
 
-            Status = FT->_VirtualFree((LPVOID )lpBaseAddress, 0, MEM_RELEASE);
+            Status = FT->_VirtualFree((LPVOID)lpBaseAddress, 0, MEM_RELEASE);
         }
     }
 
@@ -522,15 +534,17 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
     return Status;
 }
 
-DWORD WINAPI MyGetFileSize(
-  __in       HANDLE hFile,
-  __out_opt  LPDWORD lpFileSizeHigh
+DWORD
+WINAPI
+MyGetFileSize(
+    __in       HANDLE hFile,
+    __out_opt  LPDWORD lpFileSizeHigh
 )
 {
-PFUNCTION_TABLE FT;
+    PFUNCTION_TABLE FT;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     if (hFile == FT->CrashDumpHandle)
     {
@@ -541,46 +555,50 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
     return FT->_GetFileSize(hFile, lpFileSizeHigh);
 }
 
-BOOL WINAPI MyReadFile(
-  __in         HANDLE hFile,
-  __out        LPVOID lpBuffer,
-  __in         DWORD nNumberOfBytesToRead,
-  __out_opt    LPDWORD lpNumberOfBytesRead,
-  __inout_opt  LPOVERLAPPED lpOverlapped
+BOOL
+WINAPI
+MyReadFile(
+    __in         HANDLE hFile,
+    __out        LPVOID lpBuffer,
+    __in         DWORD nNumberOfBytesToRead,
+    __out_opt    LPDWORD lpNumberOfBytesRead,
+    __inout_opt  LPOVERLAPPED lpOverlapped
 )
 {
-PFUNCTION_TABLE FT;
+    PFUNCTION_TABLE FT;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     return FT->_ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
 }
 
-BOOL WINAPI MyVirtualProtect(
-  __in   LPVOID lpAddress,
-  __in   SIZE_T dwSize,
-  __in   DWORD flNewProtect,
-  __out  PDWORD lpflOldProtect
+BOOL
+WINAPI
+MyVirtualProtect(
+    __in   LPVOID lpAddress,
+    __in   SIZE_T dwSize,
+    __in   DWORD flNewProtect,
+    __out  PDWORD lpflOldProtect
 )
 {
-PFUNCTION_TABLE FT;
-ULONG i, j;
-ULONG Offset;
-PUCHAR Page, Source;
-BOOL Status;
+    PFUNCTION_TABLE FT;
+    ULONG i, j;
+    ULONG Offset;
+    PUCHAR Page, Source;
+    BOOLEAN Status;
 
 #if 1
-PUCHAR x;
-WCHAR Str1[9];
-WCHAR Alpha[0x11];
-ULONG lol;
+    PUCHAR x;
+    WCHAR Str1[9];
+    WCHAR Alpha[0x11];
+    ULONG lol;
 #endif
 
-PULONGLONG RegEsp;
+    PULONGLONG RegEsp;
 
-//FT = (PFUNCTION_TABLE)NULL;
-FT = (PFUNCTION_TABLE)TABLE_OFFSET;
+    //FT = (PFUNCTION_TABLE)NULL;
+    FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
     //
     // Even if __fastcall is the 64-bits convention, arguments are saved in the stack.
@@ -593,7 +611,7 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
     Page = NULL;
 
 #if 1
-     FT->_MessageBoxW(0, 0, 0, 0);
+    FT->_MessageBoxW(0, 0, 0, 0);
 
     Alpha[0] = L'0';
     Alpha[1] = L'1';
@@ -627,7 +645,7 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
     Str1[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
     Str1[8] = L'\0';
 
-   // s = RegEsp[3];
+    // s = RegEsp[3];
     FT->_MessageBoxA(0, (PUCHAR)(RegEsp[3]), (PUCHAR)RegEsp[3], 0);
 
 #endif
@@ -648,12 +666,12 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
             Page = (PUCHAR)FT->_VirtualAlloc(0, ROUND_PAGE(dwSize), MEM_COMMIT, PAGE_READWRITE);
 
             if (FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
-                                                    //FT->MemoryHandle,
-													(MB_HANDLE)1,
-                                                    (FT->MapFile[i].Pa.QuadPart + Offset) / PAGE_SIZE,
-                                                    ROUND_PAGE(dwSize) / PAGE_SIZE,
-                                                    Page,
-                                                    ROUND_PAGE(dwSize)) == FALSE)
+                //FT->MemoryHandle,
+                (MB_HANDLE)1,
+                (FT->MapFile[i].Pa.QuadPart + Offset) / PAGE_SIZE,
+                ROUND_PAGE(dwSize) / PAGE_SIZE,
+                Page,
+                ROUND_PAGE(dwSize)) == FALSE)
             {
                 goto Exit;
             }
@@ -670,16 +688,16 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
             // for (j = 0; j < dwSize; j += 1) ((PUCHAR)lpAddress)[j] = Source[j];
 
             if (FT->_VidWriteMemoryBlockPageRange(FT->PartitionHandle,
-                                                //FT->MemoryHandle,
-												(MB_HANDLE)1,
-                                                (FT->MapFile[i].Pa.QuadPart + Offset) / PAGE_SIZE,
-                                                ROUND_PAGE(dwSize) / PAGE_SIZE,
-                                                Page,
-                                                ROUND_PAGE(dwSize)) == FALSE)
+                //FT->MemoryHandle,
+                (MB_HANDLE)1,
+                (FT->MapFile[i].Pa.QuadPart + Offset) / PAGE_SIZE,
+                ROUND_PAGE(dwSize) / PAGE_SIZE,
+                Page,
+                ROUND_PAGE(dwSize)) == FALSE)
             {
                 goto Exit;
             }
-             else FT->_MessageBoxW(0, 0, 0, 0);
+            else FT->_MessageBoxW(0, 0, 0, 0);
 
             Status = TRUE;
         }

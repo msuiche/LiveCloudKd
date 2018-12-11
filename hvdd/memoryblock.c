@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    - 
+    -
 
 
 Environment:
@@ -23,27 +23,23 @@ Revision History:
 
 #include "hvdd.h"
 
-typedef BOOL (WINAPI *pVidDmMemoryBlockQueryTopology)(HANDLE, MB_HANDLE, PVOID, ULONG, PULONG64, PULONG64, PULONG64);
-typedef BOOL (WINAPI *pVidQueryMemoryBlockMbpCount)(HANDLE, MB_HANDLE, PULONG64, PULONG64);
-
-BOOL
-MyVidQueryMemoryBlockMbpCount(HANDLE PartitionHandle,
-                              MB_HANDLE MemoryBlockHandle,
-                              PULONG64 PageCountTotal,
-                              PULONG64 PageCountValid)
+BOOLEAN
+MyVidQueryMemoryBlockMbpCount(
+    _In_ HANDLE PartitionHandle,
+    _In_ MB_HANDLE MemoryBlockHandle,
+    _Out_ PULONG64 PageCountTotal,
+    _Out_ PULONG64 PageCountValid
+)
 {
-PVOID BitMapBuffer;
-pVidDmMemoryBlockQueryTopology VidDmMemoryBlockQueryTopology;
-pVidQueryMemoryBlockMbpCount VidQueryMemoryBlockMbpCount;
+    PVOID BitMapBuffer;
+    pVidDmMemoryBlockQueryTopology VidDmMemoryBlockQueryTopology;
+    pVidQueryMemoryBlockMbpCount VidQueryMemoryBlockMbpCount;
 
-ULONG64 c;
+    ULONG64 c;
 
-ULONG BitMapSize;
+    ULONG BitMapSize = 0;
 
-BOOL Ret;
-
-    BitMapSize = 0;
-    Ret = FALSE;
+    BOOLEAN Ret = FALSE;
 
     BitMapBuffer = malloc(0x20000); // MAX 4GB MAP 0x20000 original
     if (BitMapBuffer == NULL) return FALSE;
@@ -61,30 +57,30 @@ BOOL Ret;
         }
 
         Ret = VidQueryMemoryBlockMbpCount(PartitionHandle,
-                                          MemoryBlockHandle,
-                                          PageCountTotal,
-                                          PageCountValid);
+            MemoryBlockHandle,
+            PageCountTotal,
+            PageCountValid);
     }
     else
     {
-        for (BitMapSize =  1; BitMapSize < 0x20000; BitMapSize += 1)
+        for (BitMapSize = 1; BitMapSize < 0x20000; BitMapSize += 1)
         {
             // Hyper-V R2 SP1
-            
-			Ret = VidDmMemoryBlockQueryTopology(PartitionHandle,
-				MemoryBlockHandle,
-				BitMapBuffer,
-				BitMapSize,
-				PageCountTotal,
-				PageCountValid,
-				&c);
-			//printf("VidDmMemoryBlockQueryTopology GetLastError %x\n", GetLastError());
 
-			if (Ret == TRUE) {
-				printf("VidDmMemoryBlockQueryTopology was succefull\n");
-				break;
-			}
-				
+            Ret = VidDmMemoryBlockQueryTopology(PartitionHandle,
+                MemoryBlockHandle,
+                BitMapBuffer,
+                BitMapSize,
+                PageCountTotal,
+                PageCountValid,
+                &c);
+            //printf("VidDmMemoryBlockQueryTopology GetLastError %x\n", GetLastError());
+
+            if (Ret == TRUE) {
+                printf("VidDmMemoryBlockQueryTopology was succefull\n");
+                break;
+            }
+
             if (GetLastError() == ERROR_VID_INVALID_MEMORY_BLOCK_HANDLE)
             {
                 goto Exit;
@@ -103,21 +99,21 @@ BOOL Ret;
 Exit:
     free(BitMapBuffer);
 
-    return BitMapSize;
+    return !!BitMapSize;
 }
 
-BOOL
+BOOLEAN
 GetMemoryBlocks(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 )
 {
     ULONG64 MmNonPagedPoolStart, MmNonPagedPoolEnd;
 
-    PUCHAR BaseAddress,RegionBlock;
+    PUCHAR BaseAddress, RegionBlock;
     SIZE_T ReturnedLen;
-    PULONG64 Buffer;
+    PULONG64 Buffer = NULL;
 
-    PHVDD_MEMORY_BLOCK Blocks;
+    PHVDD_MEMORY_BLOCK Blocks = NULL;
     ULONG MaxBlocks, BlockIndex;
     ULONG i, j;
 
@@ -126,19 +122,14 @@ GetMemoryBlocks(
     ULONG64 BiggestPageCountTotal;
     ULONG MainMemoryBlockIndex;
 
-	MEMORY_BASIC_INFORMATION mbi = { 0 };
-	SYSTEM_INFO si;
+    MEMORY_BASIC_INFORMATION mbi = { 0 };
+    SYSTEM_INFO si;
 
-	PUCHAR minAddress, maxAddress;
+    PUCHAR minAddress, maxAddress;
 
-    BOOL Ret;
+    BOOLEAN Ret = FALSE;
 
-    Ret = FALSE;
-
-    Blocks = NULL;
-    Buffer = NULL;
-
-     printf("GetMemoryBlocks()\n");
+    printf("GetMemoryBlocks()\n");
 
     MaxBlocks = 1024;
     Blocks = (PHVDD_MEMORY_BLOCK)malloc(sizeof(HVDD_MEMORY_BLOCK) * MaxBlocks);
@@ -153,179 +144,178 @@ GetMemoryBlocks(
 
     BlockIndex = 0;
 
-     printf("MmNonPagedPoolStart = 0x%llx\n", MmNonPagedPoolStart);
-     printf("MmNonPagedPoolEnd = 0x%llx\n", MmNonPagedPoolEnd);
+    printf("MmNonPagedPoolStart = 0x%llx\n", MmNonPagedPoolStart);
+    printf("MmNonPagedPoolEnd = 0x%llx\n", MmNonPagedPoolEnd);
     //
     // Even with x64 architecture we set the limit to 0x8000000. Everything mapped above are
     // executables, dlls, etc.
     // Limit:0x7DF5FFE60000
     //
+    GetSystemInfo(&si);
+    minAddress = si.lpMinimumApplicationAddress;
+    maxAddress = si.lpMaximumApplicationAddress;
 
- 
-	 GetSystemInfo(&si);
-	 minAddress = si.lpMinimumApplicationAddress;
-	 maxAddress = si.lpMaximumApplicationAddress;
+    while (minAddress < maxAddress)
+    {
+        printf("0x%p\n", minAddress);
+        if (!VirtualQueryEx(PartitionEntry->WorkerHandle, minAddress, &mbi, sizeof(mbi)))
+            printf("[-] VirtualQueryEx() failed. %d\n", GetLastError());
+        if (mbi.State == MEM_COMMIT) //&& mbi.Protect == PAGE_READWRITE
+        {
+            RegionBlock = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
+            for (BaseAddress = mbi.BaseAddress; BaseAddress < RegionBlock; BaseAddress += PAGE_SIZE) //remove =
+            {
+                if (ReadProcessMemory(PartitionEntry->WorkerHandle, BaseAddress, Buffer,
+                    (SIZE_T)PAGE_SIZE, &ReturnedLen) == TRUE)
+                {
+                    //printf("Read - 1 - 0x%p\n", minAddress);
+                    for (i = 0; i < (PAGE_SIZE / sizeof(ULONG64)); i += 1)
+                    {
+                        if ((Buffer[i] >= MmNonPagedPoolStart) && (Buffer[i] < MmNonPagedPoolEnd))
+                        {
+                            // printf("Read - %d 0x%llx\n", i, Buffer[i]);
+                            for (j = 0; j < BlockIndex; j++)
+                            {
+                                if (Blocks[j].MemoryHandle == (MB_HANDLE)Buffer[i])
+                                {
+                                    Blocks[j].Hits += 1;
+                                    break;
+                                }
+                            }
+                            printf("j == %d\n", j);
+                            printf("blockIndex == %d\n", BlockIndex);
+                            if ((j == BlockIndex) && (BlockIndex < MaxBlocks))
+                            {
+                                Blocks[BlockIndex].MemoryHandle = (MB_HANDLE)Buffer[i];
+                                Blocks[BlockIndex].Hits = 1;
+                                BlockIndex += 1;
+                                printf("j == BlockIndex) && (BlockIndex < MaxBlocks), BlockIndex = %d, buffer %d = 0x%llx\n", BlockIndex, i, Buffer[i]);
+                            }
 
-	 while (minAddress < maxAddress)
-	 {
-		 printf("0x%p\n", minAddress);
-		 if (!VirtualQueryEx(PartitionEntry->WorkerHandle, minAddress, &mbi, sizeof(mbi)))
-			 printf("[-] VirtualQueryEx() failed. %d\n", GetLastError());
-		 if (mbi.State == MEM_COMMIT) //&& mbi.Protect == PAGE_READWRITE
-		 {
-			 RegionBlock = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
-			 for (BaseAddress = mbi.BaseAddress; BaseAddress < RegionBlock; BaseAddress += PAGE_SIZE) //remove =
-			 {
-				 if (ReadProcessMemory(PartitionEntry->WorkerHandle, BaseAddress, Buffer,
-					 (SIZE_T)PAGE_SIZE, &ReturnedLen) == TRUE)
-				 {
-					 //printf("Read - 1 - 0x%p\n", minAddress);
-					 for (i = 0; i < (PAGE_SIZE / sizeof(ULONG64)); i += 1)
-					 {
-						 if ((Buffer[i] >= MmNonPagedPoolStart) && (Buffer[i] < MmNonPagedPoolEnd))
-						 {
-							// printf("Read - %d 0x%llx\n", i, Buffer[i]);
-							 for (j = 0; j < BlockIndex; j++)
-							 {
-								 if (Blocks[j].MemoryHandle == (MB_HANDLE)Buffer[i])
-								 {
-									 Blocks[j].Hits += 1;
-									 break;
-								 }
-							 }
-							 printf("j == %d\n", j);
-							 printf("blockIndex == %d\n", BlockIndex);
-							 if ((j == BlockIndex) && (BlockIndex < MaxBlocks))
-							 {
-								 Blocks[BlockIndex].MemoryHandle = (MB_HANDLE)Buffer[i];
-								 Blocks[BlockIndex].Hits = 1;
-								 BlockIndex += 1;
-								 printf("j == BlockIndex) && (BlockIndex < MaxBlocks), BlockIndex = %d, buffer %d = 0x%llx\n", BlockIndex, i, Buffer[i]);
-							 }
+                            if (BlockIndex > MaxBlocks)
+                            {
+                                //
+                                // TODO: realloc()
+                                //
+                                printf("BlockIndex > MaxBlocks \n");
+                                goto Exit;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        minAddress = (LPBYTE)mbi.BaseAddress + mbi.RegionSize;
+    }
 
-							 if (BlockIndex > MaxBlocks)
-							 {
-								 //
-								 // TODO: realloc()
-								 //
-								 printf("BlockIndex > MaxBlocks \n");
-								 goto Exit;
-							 }
-						 }
-					 }
-				 }
-			 }
-		}
-		minAddress = (LPBYTE)mbi.BaseAddress + mbi.RegionSize;
-	 }
+#if 0
+    SIZE_T fromAddress, start, end;
+    MEMORY_BASIC_INFORMATION mbi = { 0 };
+    unsigned char *p = NULL;
+    for (p = NULL;
+        VirtualQueryEx(PartitionEntry->WorkerHandle, p, &mbi, sizeof(mbi)) == sizeof(mbi);
+        p += mbi.RegionSize)
+    {
+        //std::vector<char> buffer;
+        //std::vector<char>::iterator pos;
 
-	 
-	 //SIZE_T fromAddress, start, end;
-	 //MEMORY_BASIC_INFORMATION mbi = { 0 };
-	 //unsigned char *p = NULL;
-	 //for (p = NULL;
-		// VirtualQueryEx(PartitionEntry->WorkerHandle, p, &mbi, sizeof(mbi)) == sizeof(mbi);
-		// p += mbi.RegionSize)
-	 //{
-		// //std::vector<char> buffer;
-		// //std::vector<char>::iterator pos;
+        if (mbi.State == MEM_COMMIT) //(mbi.Type == MEM_MAPPED || mbi.Type == MEM_PRIVATE)
+        {
+            start = (unsigned)mbi.BaseAddress;
+            end = (unsigned)mbi.BaseAddress + mbi.RegionSize;
+            Buffer = (PULONG64)malloc(mbi.RegionSize);
+            if (Buffer == NULL) goto Exit;
+            if (ReadProcessMemory(PartitionEntry->WorkerHandle, start, Buffer,
+                mbi.RegionSize, &ReturnedLen) == TRUE)
+            {
+                printf("Read - 1 - 0x%llx\n", start);
+                for (i = 0; i < (mbi.RegionSize / sizeof(ULONG64)); i += 1)
+                {
+                    if ((Buffer[i] >= MmNonPagedPoolStart) && (Buffer[i] < MmNonPagedPoolEnd))
+                    {
+                        printf("Read - %d 0x%llx\n", i, Buffer[i]);
+                        for (j = 0; j < BlockIndex; j++)
+                        {
+                            if (Blocks[j].MemoryHandle == (MB_HANDLE)Buffer[i])
+                            {
+                                Blocks[j].Hits += 1;
+                                break;
+                            }
+                        }
 
-		// if (mbi.State == MEM_COMMIT) //(mbi.Type == MEM_MAPPED || mbi.Type == MEM_PRIVATE)
-		// {
-		//	 start = (unsigned)mbi.BaseAddress;
-		//	 end = (unsigned)mbi.BaseAddress + mbi.RegionSize;
-		//	 Buffer = (PULONG64)malloc(mbi.RegionSize);
-		//		if (Buffer == NULL) goto Exit;
-		//	 if (ReadProcessMemory(PartitionEntry->WorkerHandle, start, Buffer,
-		//		 mbi.RegionSize, &ReturnedLen) == TRUE)
-		//	 {
-		//		 printf("Read - 1 - 0x%llx\n", start);
-		//		 for (i = 0; i < (mbi.RegionSize / sizeof(ULONG64)); i += 1)
-		//		 {
-		//			 if ((Buffer[i] >= MmNonPagedPoolStart) && (Buffer[i] < MmNonPagedPoolEnd))
-		//			 {
-		//				 printf("Read - %d 0x%llx\n", i, Buffer[i]);
-		//				 for (j = 0; j < BlockIndex; j++)
-		//				 {
-		//					 if (Blocks[j].MemoryHandle == (MB_HANDLE)Buffer[i])
-		//					 {
-		//						 Blocks[j].Hits += 1;
-		//						 break;
-		//					 }
-		//				 }
+                        if ((j == BlockIndex) && (BlockIndex < MaxBlocks))
+                        {
+                            Blocks[BlockIndex].MemoryHandle = (MB_HANDLE)Buffer[i];
+                            Blocks[BlockIndex].Hits = 1;
+                            BlockIndex += 1;
+                        }
 
-		//				 if ((j == BlockIndex) && (BlockIndex < MaxBlocks))
-		//				 {
-		//					 Blocks[BlockIndex].MemoryHandle = (MB_HANDLE)Buffer[i];
-		//					 Blocks[BlockIndex].Hits = 1;
-		//					 BlockIndex += 1;
-		//				 }
+                        if (BlockIndex > MaxBlocks)
+                        {
+                            //
+                            // TODO: realloc()
+                            //
+                            printf("BlockIndex > MaxBlocks \n");
+                            goto Exit;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-		//				 if (BlockIndex > MaxBlocks)
-		//				 {
-		//					 //
-		//					 // TODO: realloc()
-		//					 //
-		//					 printf("BlockIndex > MaxBlocks \n");
-		//					 goto Exit;
-		//				 }
-		//			 }
-		//		 }
-		//	 }
-		// }
-	 //}
+    for (BaseAddress = 0; BaseAddress <= (PUCHAR)0x7DF5FFE60000; BaseAddress += PAGE_SIZE)
+    {
+        //printf("Read address 0x%llx\n", BaseAddress);
+        if (ReadProcessMemory(PartitionEntry->WorkerHandle, BaseAddress, Buffer,
+            (SIZE_T)PAGE_SIZE, &ReturnedLen) == TRUE)
+        {
+            //printf("Read - 1 - 0x%llx\n", BaseAddress);
+            for (i = 0; i < (PAGE_SIZE / sizeof(ULONG64)); i += 1) // i < 0x400
+            {
+                if ((Buffer[i] >= MmNonPagedPoolStart) && (Buffer[i] < MmNonPagedPoolEnd))
+                {
+                    printf("Buffer between MmNonPagedPoolStart_End - %d 0x%llx\n", i, Buffer[i]);
+                    for (j = 0; j < BlockIndex; j++) //check block duplicates
+                    {
+                        if (Blocks[j].MemoryHandle == (MB_HANDLE)Buffer[i])
+                        {
+                            Blocks[j].Hits += 1;
+                            break;
+                        }
+                    }
 
-  //  for (BaseAddress = 0; BaseAddress <= (PUCHAR)0x7DF5FFE60000; BaseAddress += PAGE_SIZE)
-  //  {
-		////printf("Read address 0x%llx\n", BaseAddress);
-		//if (ReadProcessMemory(PartitionEntry->WorkerHandle, BaseAddress, Buffer,
-  //                            (SIZE_T)PAGE_SIZE, &ReturnedLen) == TRUE)
-  //      {
-  //         //printf("Read - 1 - 0x%llx\n", BaseAddress);
-  //          for (i = 0; i < (PAGE_SIZE / sizeof(ULONG64)); i += 1) // i < 0x400
-  //          {
-  //              if ((Buffer[i] >= MmNonPagedPoolStart) && (Buffer[i] < MmNonPagedPoolEnd))
-  //              {
-		//			printf("Buffer between MmNonPagedPoolStart_End - %d 0x%llx\n",i, Buffer[i]);
-		//			for (j = 0; j < BlockIndex; j++) //check block duplicates
-  //                  {
-  //                      if (Blocks[j].MemoryHandle == (MB_HANDLE)Buffer[i])
-  //                      {
-  //                          Blocks[j].Hits += 1;
-  //                          break;
-  //                      }
-  //                  }
+                    printf("j == %d\n", j);
+                    printf("blockIndex == %d\n", BlockIndex);
+                    if ((j == BlockIndex) && (BlockIndex < MaxBlocks)) //if block is original
+                    {
+                        Blocks[BlockIndex].MemoryHandle = (MB_HANDLE)Buffer[i];
+                        Blocks[BlockIndex].Hits = 1;
+                        BlockIndex += 1;
+                        printf("j == BlockIndex) && (BlockIndex < MaxBlocks), BlockIndex = %d, buffer %d = 0x%llx\n", BlockIndex, i, Buffer[i]);
 
-		//			printf("j == %d\n", j);
-		//			printf("blockIndex == %d\n", BlockIndex);
-  //                  if ((j == BlockIndex) && (BlockIndex < MaxBlocks)) //if block is original
-  //                  {
-  //                      Blocks[BlockIndex].MemoryHandle = (MB_HANDLE)Buffer[i];
-  //                      Blocks[BlockIndex].Hits = 1;
-  //                      BlockIndex += 1;
-		//				printf("j == BlockIndex) && (BlockIndex < MaxBlocks), BlockIndex = %d, buffer %d = 0x%llx\n", BlockIndex, i, Buffer[i]);
+                    }
 
-  //                  }
-
-  //                  if (BlockIndex > MaxBlocks)
-  //                  {
-  //                      //
-  //                      // TODO: realloc()
-  //                      //
-		//				printf("BlockIndex > MaxBlocks \n");
-  //                      goto Exit;
-  //                  }
-  //              }
-  //          }
-  //      }
-  //  }
+                    if (BlockIndex > MaxBlocks)
+                    {
+                        //
+                        // TODO: realloc()
+                        //
+                        printf("BlockIndex > MaxBlocks \n");
+                        goto Exit;
+                    }
+                }
+            }
+        }
+    }
+#endif
 
     //
     // Validate Memory Block Handles
     //
     MemoryBlockCount = 0;
     BiggestPageCountTotal = 0;
-	MainMemoryBlockIndex = 0; //runtime error check
+    MainMemoryBlockIndex = 0; //runtime error check
 
     // if (!BlockIndex) return FALSE;
     printf("BlockIndex = %d\n", BlockIndex);
@@ -343,15 +333,15 @@ GetMemoryBlocks(
                                         &PageCountValid))
         */
         if (MyVidQueryMemoryBlockMbpCount(PartitionEntry->PartitionHandle,
-                                          (MB_HANDLE)Blocks[i].MemoryHandle,
-                                          &PageCountTotal,
-                                          &PageCountValid))
+            (MB_HANDLE)Blocks[i].MemoryHandle,
+            &PageCountTotal,
+            &PageCountValid))
         {
             Blocks[i].IsMemoryBlock = TRUE;
             Blocks[i].PageCountTotal = PageCountTotal;
 
             //printf("Blocks[0x%x].PageCountTotal = 0x%llx\n", i, Blocks[i].PageCountTotal);
-			printf("Blocks[0x%x].MemoryHandle=%p\n", i, Blocks[i].MemoryHandle);
+            printf("Blocks[0x%x].MemoryHandle=%p\n", i, Blocks[i].MemoryHandle);
 
             MemoryBlockCount += 1;
 
@@ -376,8 +366,8 @@ GetMemoryBlocks(
     {
         if (Blocks[i].IsMemoryBlock == TRUE)
         {
-             PartitionEntry->MemoryBlockTable[j] = Blocks[i];
-			 PartitionEntry->MemoryBlockTable[j].PageCountTotal = VM_PAGE_COUNT; // HARDCODED HACK
+            PartitionEntry->MemoryBlockTable[j] = Blocks[i];
+            PartitionEntry->MemoryBlockTable[j].PageCountTotal = VM_PAGE_COUNT; // HARDCODED HACK
 
             if (i == MainMemoryBlockIndex)
             {
@@ -398,32 +388,34 @@ Exit:
 }
 
 PHYSICAL_ADDRESS
-MmGetPhysicalAddress(PHVDD_PARTITION PartitionEntry,
-                     ULONG64 Va)
+MmGetPhysicalAddress(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 Va
+)
 {
-XMM_ALIGN16 UINT64 MemoryBlockPageIndex, MemoryBlockGpaRangeFlags;
-XMM_ALIGN16 HV_GVA_PAGE_NUMBER GvaPage, GpaPage;
-XMM_ALIGN16 HV_TRANSLATE_GVA_RESULT GvaResult;
-XMM_ALIGN16 PVOID Handler;
-PVOID MmioContext;
+    XMM_ALIGN16 UINT64 MemoryBlockPageIndex, MemoryBlockGpaRangeFlags;
+    XMM_ALIGN16 HV_GVA_PAGE_NUMBER GvaPage, GpaPage;
+    XMM_ALIGN16 HV_TRANSLATE_GVA_RESULT GvaResult;
+    XMM_ALIGN16 PVOID Handler;
+    PVOID MmioContext;
 
-PHYSICAL_ADDRESS Pa;
+    PHYSICAL_ADDRESS Pa;
 
-BOOL Ret;
+    BOOLEAN Ret;
 
     GvaPage = Va / PAGE_SIZE;
     Pa.QuadPart = 0;
 
     Ret = VidTranslateGvaToGpa(PartitionEntry->PartitionHandle,
-                               0,
-                               HV_TRANSLATE_GVA_VALIDATE_READ,
-                               GvaPage,
-                               &GvaResult,
-                               &GpaPage,
-                               &MmioContext,
-                               &Handler,
-                               &MemoryBlockPageIndex,
-                               &MemoryBlockGpaRangeFlags);
+        0,
+        HV_TRANSLATE_GVA_VALIDATE_READ,
+        GvaPage,
+        &GvaResult,
+        &GpaPage,
+        &MmioContext,
+        &Handler,
+        &MemoryBlockPageIndex,
+        &MemoryBlockGpaRangeFlags);
 
     if (Ret == TRUE)
     {
@@ -434,111 +426,115 @@ BOOL Ret;
     return Pa;
 }
 
-BOOL
-MmReadPageAtVirtualAddress(PHVDD_PARTITION PartitionEntry,
-                           ULONG64 Va,
-                           PVOID Buffer,
-                           ULONG Size)
+BOOLEAN
+MmReadPageAtVirtualAddress(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 Va,
+    _Out_ PVOID Buffer,
+    _In_ ULONG Size
+)
 {
-UINT64 MemoryBlockPageIndex = 0x6666, MemoryBlockGpaRangeFlags = 0x5555;
-HV_GVA_PAGE_NUMBER GvaPage = 0x4321, GpaPage = 0x1234;
-XMM_ALIGN64 HV_TRANSLATE_GVA_RESULT GvaResult = {9};
-PVOID Handler = (PVOID)0x1111;
-MB_HANDLE MemoryBlockHandle, i = (MB_HANDLE)0x2222;
-PVOID MmioContext = (PVOID)0x3333;
+    UINT64 MemoryBlockPageIndex = 0x6666, MemoryBlockGpaRangeFlags = 0x5555;
+    HV_GVA_PAGE_NUMBER GvaPage = 0x4321, GpaPage = 0x1234;
+    XMM_ALIGN64 HV_TRANSLATE_GVA_RESULT GvaResult = { 9 };
+    PVOID Handler = (PVOID)0x1111;
+    MB_HANDLE MemoryBlockHandle, i = (MB_HANDLE)0x2222;
+    PVOID MmioContext = (PVOID)0x3333;
 
-BOOL Ret;
+    BOOLEAN Ret;
 
     if (Size < PAGE_SIZE) return FALSE;
 
-	//printf("VidTranslateGvaToGpa was called\n");
-	//printf(" VidTranslateGvaToGpa.Va = 0x%llx\n", Va);
-	//Va = 0xfffff802bb03b530;
-	GvaPage = Va / PAGE_SIZE;
+    //printf("VidTranslateGvaToGpa was called\n");
+    //printf(" VidTranslateGvaToGpa.Va = 0x%llx\n", Va);
+    //Va = 0xfffff802bb03b530;
+    GvaPage = Va / PAGE_SIZE;
 
     Ret = VidTranslateGvaToGpa(PartitionEntry->PartitionHandle,
-                               0,
-                               HV_TRANSLATE_GVA_VALIDATE_READ,
-                               GvaPage,
-                               &GvaResult,
-                               &GpaPage,
-                               &MmioContext,
-                               &Handler,
-                               &MemoryBlockPageIndex,
-                               &MemoryBlockGpaRangeFlags);
+        0,
+        HV_TRANSLATE_GVA_VALIDATE_READ,
+        GvaPage,
+        &GvaResult,
+        &GpaPage,
+        &MmioContext,
+        &Handler,
+        &MemoryBlockPageIndex,
+        &MemoryBlockGpaRangeFlags);
 
-	if (Ret == FALSE) {
-		printf("VidTranslateGvaToGpa false\n");
-		return FALSE;
-	}
+    if (Ret == FALSE) {
+        printf("VidTranslateGvaToGpa false\n");
+        return FALSE;
+    }
 
-	//printf("GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
-	//printf( " VidTranslateGvaToGpa result: 0x%x\n", Ret);
-		
-	/*if (GpaPage != 0) {
-		printf("  MmReadPageAtVirtualAddress->Va 0x%p\n", Va);
-		printf("  GpaPage = 0x%x\n", GpaPage);
-		printf("  MemoryBlockPageIndex = 0x%Ix\n", MemoryBlockPageIndex);
-		printf("  GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
+#if 0
+    printf("GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
+    printf(" VidTranslateGvaToGpa result: 0x%x\n", Ret);
 
-	}*/
-	//printf("  Handler = 0x%p\n", Handler);
-	//printf("  MemoryBlockGpaRangeFlags = 0x%x\n", MemoryBlockGpaRangeFlags);
-    //MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle;
-	//MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MainMemoryBlockIndex;
-	//printf("MemoryBlockHandle 0x%x\n", PartitionEntry->MainMemoryBlockIndex);
-	//Ret = FALSE;
-	//i = 0;
-	//while (Ret == FALSE) {
-	//	Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
-	//		//MemoryBlockHandle,
-	//		(MB_HANDLE)i,
-	//		MemoryBlockPageIndex,
-	//		1ULL,
-	//		Buffer,
-	//		Size);
-	//	i = (UINT64)i+1;
-	//}
-	//for (size_t i = 1; i < 0x10; i++)
-	//{
-	//	Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
-	//		//MemoryBlockHandle,
-	//		(MB_HANDLE)i,
-	//		MemoryBlockPageIndex,
-	//		1ULL,
-	//		Buffer,
-	//		Size);
-	//	if (Ret == TRUE) {
-	//		//printf("VidReadMemoryBlockPageRange true, handle = 0%x\n",i);
-	//		if (i != 1) {
-	//			printf("VidReadMemoryBlockPageRange Handle is not equal 1, and i = 0%x\n", i);
-	//		}
-	//		return TRUE;
-	//	}
-	//}
+    /*if (GpaPage != 0) {
+        printf("  MmReadPageAtVirtualAddress->Va 0x%p\n", Va);
+        printf("  GpaPage = 0x%x\n", GpaPage);
+        printf("  MemoryBlockPageIndex = 0x%Ix\n", MemoryBlockPageIndex);
+        printf("  GvaResult.ResultCode = %d\n", GvaResult.ResultCode);
 
-	Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
-		//MemoryBlockHandle,
-		(MB_HANDLE)1,
-		MemoryBlockPageIndex,
-		1ULL,
-		Buffer,
-		Size);
+    }*/
+    printf("  Handler = 0x%p\n", Handler);
+    printf("  MemoryBlockGpaRangeFlags = 0x%x\n", MemoryBlockGpaRangeFlags);
+    MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle;
+    MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MainMemoryBlockIndex;
+    printf("MemoryBlockHandle 0x%x\n", PartitionEntry->MainMemoryBlockIndex);
+    Ret = FALSE;
+    i = 0;
+    while (Ret == FALSE) {
+        Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
+            //MemoryBlockHandle,
+            (MB_HANDLE)i,
+            MemoryBlockPageIndex,
+            1ULL,
+            Buffer,
+            Size);
+        i = (UINT64)i + 1;
+    }
+    for (size_t i = 1; i < 0x10; i++)
+    {
+        Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
+            //MemoryBlockHandle,
+            (MB_HANDLE)i,
+            MemoryBlockPageIndex,
+            1ULL,
+            Buffer,
+            Size);
+        if (Ret == TRUE) {
+            //printf("VidReadMemoryBlockPageRange true, handle = 0%x\n",i);
+            if (i != 1) {
+                printf("VidReadMemoryBlockPageRange Handle is not equal 1, and i = 0%x\n", i);
+            }
+            return TRUE;
+        }
+    }
+#endif 
+
+    Ret = VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
+        //MemoryBlockHandle,
+        (MB_HANDLE)1,
+        MemoryBlockPageIndex,
+        1ULL,
+        Buffer,
+        Size);
 
     return Ret;
 }
 
-BOOL
-MmReadVirtualAddress(PHVDD_PARTITION PartitionEntry,
-                     ULONG64 Va,
-                     PVOID Buffer,
-                     ULONG Size)
+BOOLEAN
+MmReadVirtualAddress(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 Va,
+    _Out_ PVOID Buffer,
+    _In_ ULONG Size
+)
 {
-ULONG BytesReaded;
-
-BOOL Ret;
-
-PUCHAR InternalBuffer;
+    ULONG BytesReaded;
+    PUCHAR InternalBuffer;
+    BOOLEAN Ret;
 
     BytesReaded = 0;
 
@@ -550,9 +546,9 @@ PUCHAR InternalBuffer;
     while (BytesReaded < ROUND_PAGE(Size))
     {
         Ret = MmReadPageAtVirtualAddress(PartitionEntry,
-                                         Va + BytesReaded,
-                                         InternalBuffer + BytesReaded,
-                                         PAGE_SIZE);
+            Va + BytesReaded,
+            InternalBuffer + BytesReaded,
+            PAGE_SIZE);
 
         if (Ret == FALSE) goto Exit;
 
@@ -560,9 +556,9 @@ PUCHAR InternalBuffer;
     }
 
     memcpy_s(Buffer,
-             Size,
-             InternalBuffer + (Va & (PAGE_SIZE - 1)),
-             Size);
+        Size,
+        InternalBuffer + (Va & (PAGE_SIZE - 1)),
+        Size);
 
 Exit:
     if (InternalBuffer) free(InternalBuffer);

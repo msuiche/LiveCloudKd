@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    - 
+    -
 
 
 Environment:
@@ -23,22 +23,18 @@ Revision History:
 
 #include "hvdd.h"
 
-BOOL
-DumpVirtualMachine(PHVDD_PARTITION PartitionEntry,
-                   LPCWSTR DestinationFile)
+BOOLEAN
+DumpVirtualMachine(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ LPCWSTR DestinationFile
+)
 {
-    HANDLE FileHandle;
-
-    PVOID Buffer;
-
-    ULONG Index;
-    BOOL Ret;
-
+    HANDLE FileHandle = INVALID_HANDLE_VALUE;
     MB_HANDLE MemoryBlockHandle;
     ULONG64 PageCountTotal;
-
-    FileHandle = INVALID_HANDLE_VALUE;
-    Buffer = NULL;
+    PVOID Buffer = NULL;
+    ULONG Index;
+    BOOLEAN Ret;
 
     if (CreateDestinationFile(DestinationFile, &FileHandle) == FALSE) goto Exit;
 
@@ -50,20 +46,20 @@ DumpVirtualMachine(PHVDD_PARTITION PartitionEntry,
 
     White(L"PageCountTotal = 0x%llx\n", PageCountTotal);
     Green(L"\n"
-          L"   Total Size: %d MB\n", (ULONG)(((ULONG)PageCountTotal * PAGE_SIZE) / (1024 * 1024)));
+        L"   Total Size: %d MB\n", (ULONG)(((ULONG)PageCountTotal * PAGE_SIZE) / (1024 * 1024)));
     White(L"   Starting... ");
 
     for (Index = 0;
-         Index < (ULONG)PageCountTotal;
-         Index += (BLOCK_SIZE / PAGE_SIZE))
+        Index < (ULONG)PageCountTotal;
+        Index += (BLOCK_SIZE / PAGE_SIZE))
     {
         wprintf(L"Index = 0x%x\n", Index);
         if (VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
-                                        MemoryBlockHandle,
-                                        Index,
-                                        (BLOCK_SIZE / PAGE_SIZE),
-                                        Buffer,
-                                        BLOCK_SIZE))
+            MemoryBlockHandle,
+            Index,
+            (BLOCK_SIZE / PAGE_SIZE),
+            Buffer,
+            BLOCK_SIZE))
         {
             WriteFileSynchronous(FileHandle, Buffer, BLOCK_SIZE);
         }
@@ -83,30 +79,27 @@ Exit:
     return Ret;
 }
 
-BOOL
-DumpCrashVirtualMachine(PHVDD_PARTITION PartitionEntry,
-                        LPCWSTR DestinationFile)
+BOOLEAN
+DumpCrashVirtualMachine(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ LPCWSTR DestinationFile
+)
 {
-ULONG HeaderSize;
-PVOID Header;
+    ULONG HeaderSize;
+    PVOID Header = NULL;
 
-HANDLE FileHandle;
+    HANDLE FileHandle = INVALID_HANDLE_VALUE;
 
-MB_HANDLE MemoryBlockHandle;
-ULONG64 PageCountTotal;
-ULONG Index;
+    MB_HANDLE MemoryBlockHandle;
+    ULONG64 PageCountTotal;
+    ULONG Index;
 
-PVOID Buffer;
+    PVOID Buffer = NULL;
 
-PHYSICAL_ADDRESS ContextPa;
-ULONG64 ContextVa;
+    PHYSICAL_ADDRESS ContextPa;
+    ULONG64 ContextVa;
 
-BOOL Ret;
-
-    Buffer = NULL;
-    Header = NULL;
-    Ret = FALSE;
-    FileHandle = INVALID_HANDLE_VALUE;
+    BOOLEAN Ret = FALSE;
 
     if (DumpFillHeader(PartitionEntry, &Header, &HeaderSize) == FALSE) goto Exit;
 
@@ -122,14 +115,14 @@ BOOL Ret;
     PageCountTotal += (HeaderSize / PAGE_SIZE);
 
     Green(L"\n"
-          L"   Total Size: %d MB\n", (ULONG)((PageCountTotal * PAGE_SIZE) / (1024 * 1024)));
+        L"   Total Size: %d MB\n", (ULONG)((PageCountTotal * PAGE_SIZE) / (1024 * 1024)));
     White(L"   Starting... ");
 
     if (GetMachineType(PartitionEntry) == MACHINE_X86)
     {
         ContextVa = 0;
         if (MmReadVirtualAddress(PartitionEntry, PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                 &ContextVa, sizeof(ULONG)) == FALSE) goto Exit;
+            &ContextVa, sizeof(ULONG)) == FALSE) goto Exit;
 
         //
         // If Win7/Win2008 R2 and above.
@@ -147,7 +140,7 @@ BOOL Ret;
     {
         ContextVa = 0;
         if (MmReadVirtualAddress(PartitionEntry, PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                 &ContextVa, sizeof(ULONG64)) == FALSE) goto Exit;
+            &ContextVa, sizeof(ULONG64)) == FALSE) goto Exit;
 
         ContextVa += (X64_KPROCESSOR_STATE_OFFSET + X64_CONTEXT_OFFSET);
     }
@@ -155,15 +148,15 @@ BOOL Ret;
     ContextPa = MmGetPhysicalAddress(PartitionEntry, ContextVa);
 
     for (Index = 0;
-         Index < PageCountTotal;
-         Index += (BLOCK_SIZE / PAGE_SIZE))
+        Index < PageCountTotal;
+        Index += (BLOCK_SIZE / PAGE_SIZE))
     {
         if (VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
-                                        MemoryBlockHandle,
-                                        Index,
-                                        (BLOCK_SIZE / PAGE_SIZE),
-                                        Buffer,
-                                        BLOCK_SIZE))
+            MemoryBlockHandle,
+            Index,
+            (BLOCK_SIZE / PAGE_SIZE),
+            Buffer,
+            BLOCK_SIZE))
         {
             if (((ContextPa.QuadPart / PAGE_SIZE) >= Index) &&
                 ((ContextPa.QuadPart / PAGE_SIZE) < (Index + (BLOCK_SIZE / PAGE_SIZE))))
@@ -217,20 +210,22 @@ Exit:
     return Ret;
 }
 
-BOOL
-DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
+BOOLEAN
+DumpLiveVirtualMachine(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
     ULONG HeaderSize;
-    PVOID Header;
+    PVOID Header = NULL;
 
     HANDLE HvddFile = NULL;
 
     MB_HANDLE MemoryBlockHandle; // deprecated.
     ULONG64 PageCountTotal;
 
-    PVOID Buffer;
+    PVOID Buffer = NULL;
 
-    BOOL Ret;
+    BOOLEAN Ret = FALSE;
 
     USHORT Color;
     HANDLE Handle;
@@ -241,10 +236,6 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     PHYSICAL_ADDRESS ContextPa;
     ULONG64 ContextVa;
 
-    Buffer = NULL;
-    Header = NULL;
-    Ret = FALSE;
-
     if (DumpFillHeader(PartitionEntry, &Header, &HeaderSize) == FALSE) goto Exit;
 
     Buffer = malloc(BLOCK_SIZE);
@@ -252,19 +243,19 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
 
     GetWindowsDirectoryW(WindowsDir, sizeof(WindowsDir) / sizeof(WindowsDir[0]));
     swprintf_s(CrashFilePath, sizeof(CrashFilePath) / sizeof(CrashFilePath[0]),
-               L"%s\\hvdd.dmp", WindowsDir);
+        L"%s\\hvdd.dmp", WindowsDir);
 
     HvddFile = CreateFileW(CrashFilePath,
-                          GENERIC_WRITE,
-                          FILE_SHARE_READ,
-                          NULL, CREATE_ALWAYS,
-                          FILE_ATTRIBUTE_HIDDEN | FILE_FLAG_NO_BUFFERING, NULL);
+        GENERIC_WRITE,
+        FILE_SHARE_READ,
+        NULL, CREATE_ALWAYS,
+        FILE_ATTRIBUTE_HIDDEN | FILE_FLAG_NO_BUFFERING, NULL);
 
     if (HvddFile == INVALID_HANDLE_VALUE) goto Exit;
 
     //MemoryBlockHandle = (MB_HANDLE)PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].MemoryHandle; //must be rewritten. Unuseful
     PageCountTotal = PartitionEntry->MemoryBlockTable[PartitionEntry->MainMemoryBlockIndex].PageCountTotal;
-	//PageCountTotal = VM_PAGE_COUNT; // HARDCODED_VALUE for SPECIFIC VIRTUAL MACHINE
+    //PageCountTotal = VM_PAGE_COUNT; // HARDCODED_VALUE for SPECIFIC VIRTUAL MACHINE
 
     FunctionTable._LoadLibrary = LoadLibraryW;
     FunctionTable._GetProcAddress = GetProcAddress;
@@ -286,8 +277,8 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     FunctionTable.CrashDumpHandle = INVALID_HANDLE_VALUE;
     FunctionTable.HeaderSize = HeaderSize;
     FunctionTable.Header = Header;
-   // FunctionTable.MemoryHandle = MemoryBlockHandle;
-	FunctionTable.MemoryHandle = NULL;
+    // FunctionTable.MemoryHandle = MemoryBlockHandle;
+    FunctionTable.MemoryHandle = NULL;
     FunctionTable.PartitionHandle = PartitionEntry->PartitionHandle;
     FunctionTable.FileSize.QuadPart = PageCountTotal * PAGE_SIZE + HeaderSize;
 
@@ -295,7 +286,7 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     {
         ContextVa = 0;
         if (MmReadVirtualAddress(PartitionEntry, PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                 &ContextVa, sizeof(ULONG)) == FALSE) goto Exit;
+            &ContextVa, sizeof(ULONG)) == FALSE) goto Exit;
         //
         // If Win7/Win2008 R2 and above.
         //
@@ -312,7 +303,7 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     {
         ContextVa = 0;
         if (MmReadVirtualAddress(PartitionEntry, PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                 &ContextVa, sizeof(ULONG64)) == FALSE) goto Exit;
+            &ContextVa, sizeof(ULONG64)) == FALSE) goto Exit;
 
         ContextVa += (X64_KPROCESSOR_STATE_OFFSET + X64_CONTEXT_OFFSET);
     }
@@ -320,9 +311,9 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     ContextPa = MmGetPhysicalAddress(PartitionEntry, ContextVa);
 
     FunctionTable.ContextPageIndex = (ULONG)(ContextPa.QuadPart / PAGE_SIZE);
-	printf("FunctionTable.ContextPageIndex %x \n", FunctionTable.ContextPageIndex);
+    printf("FunctionTable.ContextPageIndex %x \n", FunctionTable.ContextPageIndex);
     FunctionTable.ContextOffsetLow = (ContextPa.LowPart & (PAGE_SIZE - 1));
-	printf("FunctionTable.ContextOffsetLow %x \n", FunctionTable.ContextOffsetLow);
+    printf("FunctionTable.ContextOffsetLow %x \n", FunctionTable.ContextOffsetLow);
 
     FunctionTable.MachineType = GetMachineType(PartitionEntry);
 
@@ -347,14 +338,14 @@ Exit:
     return TRUE;
 }
 
-BOOL
-DumpFillHeader(PHVDD_PARTITION PartitionEntry,
-               PVOID *Header,
-               PULONG HeaderSize)
+BOOLEAN
+DumpFillHeader(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ PVOID *Header,
+    _In_ PULONG HeaderSize
+)
 {
-BOOL Ret;
-
-    Ret = FALSE;
+    BOOLEAN Ret = FALSE;
 
     if (GetMachineType(PartitionEntry) == MACHINE_X86)
     {
@@ -374,17 +365,18 @@ BOOL Ret;
 }
 
 PDUMP_HEADER32
-DumpFillHeader32(PHVDD_PARTITION PartitionEntry)
+DumpFillHeader32(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
-PHYSICAL_MEMORY_DESCRIPTOR32 MmPhysicalMemoryBlock32;
-EXCEPTION_RECORD32 Exception32;
-PDUMP_HEADER32 Header32;
+    PHYSICAL_MEMORY_DESCRIPTOR32 MmPhysicalMemoryBlock32;
+    EXCEPTION_RECORD32 Exception32;
+    PDUMP_HEADER32 Header32;
 
-SYSTEMTIME SystemTime;
+    ULONG MmMaximumPhysicalPage;
+    SYSTEMTIME SystemTime;
 
-ULONG i;
-
-ULONG MmMaximumPhysicalPage;
+    ULONG i;
 
     Header32 = (PDUMP_HEADER32)malloc(sizeof(DUMP_HEADER32));
     if (Header32 == NULL) goto Exit;
@@ -403,7 +395,7 @@ ULONG MmMaximumPhysicalPage;
     Header32->MachineImageType = IMAGE_FILE_MACHINE_I386;
 
     Header32->MinorVersion = PartitionEntry->KiExcaliburData.NtBuildNumber & 0xFFFF;
-    Header32->MajorVersion = PartitionEntry->KiExcaliburData.NtBuildNumber >> 28; 
+    Header32->MajorVersion = PartitionEntry->KiExcaliburData.NtBuildNumber >> 28;
 
     Header32->DirectoryTableBase = (ULONG)PartitionEntry->KiExcaliburData.DirectoryTableBase;
     Header32->PfnDataBase = (ULONG)PartitionEntry->KiExcaliburData.MmPfnDatabase;
@@ -430,8 +422,8 @@ ULONG MmMaximumPhysicalPage;
     MmPhysicalMemoryBlock32.Run[0].PageCount = MmMaximumPhysicalPage;
 
     RtlCopyMemory(&Header32->PhysicalMemoryBlock,
-                  &MmPhysicalMemoryBlock32,
-                  sizeof(PHYSICAL_MEMORY_DESCRIPTOR32));
+        &MmPhysicalMemoryBlock32,
+        sizeof(PHYSICAL_MEMORY_DESCRIPTOR32));
 
     //
     // Exception record.
@@ -443,29 +435,31 @@ ULONG MmMaximumPhysicalPage;
     Exception32.ExceptionAddress = 0xDEADBABE;
 
     RtlCopyMemory(&Header32->ExceptionRecord,
-                  &Exception32,
-                  sizeof(EXCEPTION_RECORD32));
+        &Exception32,
+        sizeof(EXCEPTION_RECORD32));
 
     GetSystemTime(&SystemTime);
     SystemTimeToFileTime(&SystemTime, &Header32->SystemTime);
 
     RtlZeroMemory(&Header32->RequiredDumpSpace, sizeof(LARGE_INTEGER));
 
-    Header32->RequiredDumpSpace.QuadPart = 
+    Header32->RequiredDumpSpace.QuadPart =
         (MmMaximumPhysicalPage * PAGE_SIZE) + sizeof(DUMP_HEADER32);
 
     RtlZeroMemory(Header32->ContextRecord, sizeof(Header32->ContextRecord));
 
     RtlZeroMemory(Header32->Comment, sizeof(Header32->Comment));
     strcpy_s(Header32->Comment, sizeof(Header32->Comment),
-             DUMP_COMMENT_STRING);
+        DUMP_COMMENT_STRING);
 
 Exit:
     return Header32;
 }
 
 PDUMP_HEADER64
-DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
+DumpFillHeader64(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
     PHYSICAL_MEMORY_DESCRIPTOR64 MmPhysicalMemoryBlock64;
     EXCEPTION_RECORD64 Exception64;
@@ -476,8 +470,6 @@ DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
     ULONG i;
 
     ULONG MmMaximumPhysicalPage;
-
-    Header64 = NULL;
 
     Header64 = (PDUMP_HEADER64)malloc(sizeof(DUMP_HEADER64));
     if (Header64 == NULL) goto Exit;
@@ -496,7 +488,7 @@ DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
     Header64->MachineImageType = IMAGE_FILE_MACHINE_AMD64;
 
     Header64->MinorVersion = PartitionEntry->KiExcaliburData.NtBuildNumber & 0xFFFF;
-    Header64->MajorVersion = PartitionEntry->KiExcaliburData.NtBuildNumber >> 28; 
+    Header64->MajorVersion = PartitionEntry->KiExcaliburData.NtBuildNumber >> 28;
 
     Header64->DirectoryTableBase = PartitionEntry->KiExcaliburData.DirectoryTableBase;
     Header64->PfnDataBase = PartitionEntry->KiExcaliburData.MmPfnDatabase;
@@ -521,8 +513,8 @@ DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
     MmPhysicalMemoryBlock64.Run[0].PageCount = MmMaximumPhysicalPage;
 
     RtlCopyMemory(&Header64->PhysicalMemoryBlock,
-                  &MmPhysicalMemoryBlock64,
-                  sizeof(PHYSICAL_MEMORY_DESCRIPTOR64));
+        &MmPhysicalMemoryBlock64,
+        sizeof(PHYSICAL_MEMORY_DESCRIPTOR64));
 
     //
     // Exception record.
@@ -534,8 +526,8 @@ DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
     Exception64.ExceptionAddress = 0xDEADBABE;
 
     RtlCopyMemory(&Header64->ExceptionRecord,
-                  &Exception64,
-                  sizeof(EXCEPTION_RECORD64));
+        &Exception64,
+        sizeof(EXCEPTION_RECORD64));
 
     GetSystemTime(&SystemTime);
 
@@ -546,7 +538,7 @@ DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
     //
     // BUGBUG: Safe int.
     //
-    Header64->RequiredDumpSpace.QuadPart = 
+    Header64->RequiredDumpSpace.QuadPart =
         (MmMaximumPhysicalPage * PAGE_SIZE) + sizeof(DUMP_HEADER64);
 
     //
@@ -558,8 +550,6 @@ DumpFillHeader64(PHVDD_PARTITION PartitionEntry)
     strcpy_s(Header64->Comment, sizeof(Header64->Comment),
         DUMP_COMMENT_STRING);
 
-
 Exit:
-
     return Header64;
 }

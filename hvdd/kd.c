@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    - 
+    -
 
 
 Environment:
@@ -26,89 +26,90 @@ Revision History:
 
 //for future - make def file
 
-
-UINT64 GetGuestReg(PHVDD_PARTITION PartitionEntry)
+UINT64
+GetGuestReg(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
-	HV_REGISTER_NAME RegisterCode;
-	HV_REGISTER_VALUE RegisterValue;
-	BOOLEAN bGetVirtualProcessorState;
-	PULONG64 lPage = NULL;
-	BOOL Ret;
-	ULONG64 uAddr01, uAddr02, uAddr = { 0 };
+    HV_REGISTER_NAME RegisterCode;
+    HV_REGISTER_VALUE RegisterValue;
+    BOOLEAN bGetVirtualProcessorState;
+    PULONG64 lPage = NULL;
+    BOOLEAN Ret;
+    ULONG64 uAddr01, uAddr02, uAddr = { 0 };
 
+    //RegisterCode = HvX64RegisterLdtr;
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,0,&RegisterCode,1,&RegisterValue);
+    //printf("GUEST HvX64RegisterLdtr 0x%llx\n", RegisterValue.Reg64);
 
-	//RegisterCode = HvX64RegisterLdtr;
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,0,&RegisterCode,1,&RegisterValue);
-	//printf("GUEST HvX64RegisterLdtr 0x%llx\n", RegisterValue.Reg64);
+    RegisterCode = HvX64RegisterIdtr;
+    bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+    printf("GUEST HvX64RegisterIdtr 0x%llx\n", RegisterValue.Reg64);
+    printf("GUEST HvX64RegisterIdtr.High64 0x%llx\n", RegisterValue.Reg128.High64);
+    printf("GUEST HvX64RegisterIdtr.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
 
-	RegisterCode = HvX64RegisterIdtr;
-	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
-	printf("GUEST HvX64RegisterIdtr 0x%llx\n", RegisterValue.Reg64);
-	printf("GUEST HvX64RegisterIdtr.High64 0x%llx\n", RegisterValue.Reg128.High64);
-	printf("GUEST HvX64RegisterIdtr.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
+    lPage = (PULONG64)malloc(PAGE_SIZE);
+    if (lPage == NULL) {
+        printf("GuestReg malloc is false\n");
+        return FALSE;
+    }
 
-	lPage = (PULONG64)malloc(PAGE_SIZE);
-	if (lPage == NULL) {
-		printf("GuestReg malloc is false\n");
-		return FALSE;
-	}
-	
-	Ret = MmReadVirtualAddress(PartitionEntry,
-		RegisterValue.Reg128.High64,
-		lPage,
-		PAGE_SIZE);
+    Ret = MmReadVirtualAddress(PartitionEntry,
+        RegisterValue.Reg128.High64,
+        lPage,
+        PAGE_SIZE);
 
-	uAddr01 = *lPage;
-	uAddr02 = *(lPage+1);
-	uAddr = ((uAddr02 & 0xFFFFFFFF)<<32) | ((uAddr01 & 0xFFFFFFFF00000000)>>32);
+    uAddr01 = *lPage;
+    uAddr02 = *(lPage + 1);
+    uAddr = ((uAddr02 & 0xFFFFFFFF) << 32) | ((uAddr01 & 0xFFFFFFFF00000000) >> 32);
 
-	if (uAddr == 0) {
-		printf("GuestReg uAddr error\n");
-		return FALSE;
-	}
-	else {
-		free(lPage);
-		return uAddr;
-	}
+    if (uAddr == 0) {
+        printf("GuestReg uAddr error\n");
+        return FALSE;
+    }
+    else {
+        free(lPage);
+        return uAddr;
+    }
 
-	//RegisterCode = HvX64RegisterTr;
+    //RegisterCode = HvX64RegisterTr;
 
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
-	//	0,
-	//	&RegisterCode,
-	//	1,
-	//	&RegisterValue);
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
+    //	0,
+    //	&RegisterCode,
+    //	1,
+    //	&RegisterValue);
 
-	//if (bGetVirtualProcessorState)
-	//{
-	//	printf("GUEST REG 0x%llx\n", RegisterValue.Reg64);
-	//	printf("GUEST Reg128.High64 0x%llx\n", RegisterValue.Reg128.High64);
-	//	printf("GUEST Reg128.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
-	//	return RegisterValue.Reg64;
-	//}
-	//else
-	//{
-	//	printf("GUEST GDTR get error", RegisterValue.Reg64);
-	//	return 1;
-	//}
-	//RegisterCode = HvX64RegisterGdtr;
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
-	//printf("GUEST HvX64RegisterGdtr 0x%llx\n", RegisterValue.Reg64);
+    //if (bGetVirtualProcessorState)
+    //{
+    //	printf("GUEST REG 0x%llx\n", RegisterValue.Reg64);
+    //	printf("GUEST Reg128.High64 0x%llx\n", RegisterValue.Reg128.High64);
+    //	printf("GUEST Reg128.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
+    //	return RegisterValue.Reg64;
+    //}
+    //else
+    //{
+    //	printf("GUEST GDTR get error", RegisterValue.Reg64);
+    //	return 1;
+    //}
+    //RegisterCode = HvX64RegisterGdtr;
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+    //printf("GUEST HvX64RegisterGdtr 0x%llx\n", RegisterValue.Reg64);
 
-	//RegisterCode = HvRegisterGuestCrashP0;
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
-	//printf("GUEST HvRegisterGuestCrashP0 0x%llx\n", RegisterValue.Reg64);
-	//RegisterCode = HvX64RegisterStar;
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
-	//printf("GUEST HvX64RegisterStar 0x%llx\n", RegisterValue.Reg64);
-	//	
-	//	RegisterCode = HvX64RegisterKernelGsBase;
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
-	//printf("GUEST HvX64RegisterKernelGsBase 0x%llx\n", RegisterValue.Reg64);
+    //RegisterCode = HvRegisterGuestCrashP0;
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+    //printf("GUEST HvRegisterGuestCrashP0 0x%llx\n", RegisterValue.Reg64);
+    //RegisterCode = HvX64RegisterStar;
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+    //printf("GUEST HvX64RegisterStar 0x%llx\n", RegisterValue.Reg64);
+    //	
+    //	RegisterCode = HvX64RegisterKernelGsBase;
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+    //printf("GUEST HvX64RegisterKernelGsBase 0x%llx\n", RegisterValue.Reg64);
 
-	//RegisterCode = HvX64RegisterSysenterEip;
-	//bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
-	//printf("GUEST HvX64RegisterSysenterRip 0x%llx\n", RegisterValue.Reg64);
+    //RegisterCode = HvX64RegisterSysenterEip;
+    //bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle, 0, &RegisterCode, 1, &RegisterValue);
+    //printf("GUEST HvX64RegisterSysenterRip 0x%llx\n", RegisterValue.Reg64);
 }
 
 MACHINE_TYPE MachineType = MACHINE_UNKNOW;
@@ -119,22 +120,22 @@ MACHINE_TYPE MachineType = MACHINE_UNKNOW;
 // EXCALIBUR_DATA KiExcaliburData = {0};
 
 ULONG64
-VmGetProcAddress(PHVDD_PARTITION PartitionEntry,
-                 ULONG64 ModuleBase,
-                 LPSTR Name)
+VmGetProcAddress(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 ModuleBase,
+    _In_ LPSTR Name
+)
 {
-PIMAGE_NT_HEADERS32 NtHeader32;
-PIMAGE_DOS_HEADER DosHeader;
+    PIMAGE_NT_HEADERS32 NtHeader32;
+    PIMAGE_DOS_HEADER DosHeader;
 
-ULONG DirRva, DirSize;
+    ULONG DirRva, DirSize;
 
-PUCHAR Buffer;
+    PUCHAR Buffer;
 
-BOOL Ret;
+    BOOLEAN Ret;
 
-ULONG64 Va;
-
-    Va = 0ULL;
+    ULONG64 Va = 0ULL;
 
     Buffer = malloc(PAGE_SIZE);
     if (Buffer == NULL) return FALSE;
@@ -142,9 +143,9 @@ ULONG64 Va;
     DosHeader = (PIMAGE_DOS_HEADER)Buffer;
 
     Ret = MmReadVirtualAddress(PartitionEntry,
-                               ModuleBase,
-                               Buffer,
-                               PAGE_SIZE);
+        ModuleBase,
+        Buffer,
+        PAGE_SIZE);
 
     if (Ret == FALSE) goto finish;
 
@@ -182,9 +183,9 @@ ULONG64 Va;
         if (Image == NULL) goto finish;
 
         Ret = MmReadVirtualAddress(PartitionEntry,
-                                   ModuleBase,
-                                   Image,
-                                   SizeOfImage);
+            ModuleBase,
+            Image,
+            SizeOfImage);
 
         if (Ret == FALSE)
         {
@@ -232,9 +233,9 @@ ULONG64 Va;
             }
         }
 
-        free (Image);
+        free(Image);
     }
-    else if (NtHeader32->OptionalHeader.Magic  == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+    else if (NtHeader32->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
     {
         PIMAGE_NT_HEADERS64 NtHeader64;
         PIMAGE_OPTIONAL_HEADER64 OptionalHeader64;
@@ -259,9 +260,9 @@ ULONG64 Va;
         if (Image == NULL) goto finish;
 
         Ret = MmReadVirtualAddress(PartitionEntry,
-                                   ModuleBase,
-                                   Image,
-                                   SizeOfImage);
+            ModuleBase,
+            Image,
+            SizeOfImage);
 
         if (Ret == FALSE)
         {
@@ -273,9 +274,9 @@ ULONG64 Va;
         DirSize = OptionalHeader64->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size;
 
         Ret = MmReadVirtualAddress(PartitionEntry,
-                                   ModuleBase + DirRva,
-                                   Image + DirRva,
-                                   DirSize);
+            ModuleBase + DirRva,
+            Image + DirRva,
+            DirSize);
 
         if (Ret == FALSE)
         {
@@ -324,7 +325,7 @@ ULONG64 Va;
             }
         }
 
-        free (Image);
+        free(Image);
     }
 
 finish:
@@ -335,22 +336,24 @@ finish:
 }
 
 MACHINE_TYPE
-GetMachineType(PHVDD_PARTITION PartitionEntry)
+GetMachineType(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
-HV_REGISTER_NAME RegisterCode;
-HV_REGISTER_VALUE RegisterValue;
-BOOLEAN bGetVirtualProcessorState;
+    HV_REGISTER_NAME RegisterCode;
+    HV_REGISTER_VALUE RegisterValue;
+    BOOLEAN bGetVirtualProcessorState;
 
     if (MachineType != MACHINE_UNKNOW) return MachineType;
 
     //RegisterCode = HvX64RegisterRip;
-	RegisterCode = HvX64RegisterTr;
+    RegisterCode = HvX64RegisterTr;
 
-	bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
-		0,
-		&RegisterCode,
-		1,
-		&RegisterValue);
+    bGetVirtualProcessorState = VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
+        0,
+        &RegisterCode,
+        1,
+        &RegisterValue);
 
     if (bGetVirtualProcessorState)
     {
@@ -358,37 +361,39 @@ BOOLEAN bGetVirtualProcessorState;
         {
             PartitionEntry->KiExcaliburData.MachineType = MACHINE_AMD64;
             MachineType = MACHINE_AMD64;
-			printf("MachineType = MACHINE_AMD64\n");
-			printf("RegisterValue.Reg64 = 0x%llx\n", RegisterValue.Reg64);
+            printf("MachineType = MACHINE_AMD64\n");
+            printf("RegisterValue.Reg64 = 0x%llx\n", RegisterValue.Reg64);
         }
         else
         {
             PartitionEntry->KiExcaliburData.MachineType = MACHINE_AMD64;
             MachineType = MACHINE_X86;
-			printf("MachineType = MACHINE_X86\n");
-			printf("RegisterValue.Reg64 = 0x%llx\n", RegisterValue.Reg64);
+            printf("MachineType = MACHINE_X86\n");
+            printf("RegisterValue.Reg64 = 0x%llx\n", RegisterValue.Reg64);
         }
     }
 
     return MachineType;
 }
 
-BOOL
-IsPaeEnabled(PHVDD_PARTITION PartitionEntry)
+BOOLEAN
+IsPaeEnabled(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
-HV_REGISTER_NAME RegisterCode;
-HV_REGISTER_VALUE RegisterValue;
+    HV_REGISTER_NAME RegisterCode;
+    HV_REGISTER_VALUE RegisterValue;
 
-BOOL PaeEnabled;
+    BOOLEAN PaeEnabled;
 
     RegisterCode = HvX64RegisterCr4;
     PaeEnabled = FALSE;
 
     if (VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
-                                    0,
-                                    &RegisterCode,
-                                    1,
-                                    &RegisterValue))
+        0,
+        &RegisterCode,
+        1,
+        &RegisterValue))
     {
         if (RegisterValue.Reg32 & (1 << 5)) // PAE_FLAG
         {
@@ -400,21 +405,23 @@ BOOL PaeEnabled;
 }
 
 ULONG64
-GetDirectoryTable(PHVDD_PARTITION PartitionEntry)
+GetDirectoryTable(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
-HV_REGISTER_NAME RegisterCode;
-HV_REGISTER_VALUE RegisterValue;
+    HV_REGISTER_NAME RegisterCode;
+    HV_REGISTER_VALUE RegisterValue;
 
-ULONG64 DirectoryTable;
+    ULONG64 DirectoryTable;
 
     DirectoryTable = 0ULL;
     RegisterCode = HvX64RegisterCr3;
 
     if (VidGetVirtualProcessorState(PartitionEntry->PartitionHandle,
-                                    0,
-                                    &RegisterCode,
-                                    1,
-                                    &RegisterValue))
+        0,
+        &RegisterCode,
+        1,
+        &RegisterValue))
     {
         DirectoryTable = RegisterValue.Reg64;
     }
@@ -423,19 +430,21 @@ ULONG64 DirectoryTable;
     return DirectoryTable;
 }
 
-BOOL
-KdFindDbgDataBlock(PHVDD_PARTITION PartitionEntry)
+BOOLEAN
+KdFindDbgDataBlock(
+    _In_ PHVDD_PARTITION PartitionEntry
+)
 {
-	PKDDEBUGGER_DATA64 DbgData = {0};
+    PKDDEBUGGER_DATA64 DbgData = { 0 };
 
-ULONG64 Base, Va;
-PULONG Page;
+    ULONG64 Base, Va;
+    PULONG Page;
 
-ULONG Index = 0, DwIndex, TryId;
+    ULONG Index = 0, DwIndex, TryId;
 
-BOOL Ret;
+    BOOLEAN Ret;
 
-MACHINE_TYPE VmType;
+    MACHINE_TYPE VmType;
 
     Ret = FALSE;
     Page = NULL;
@@ -448,13 +457,13 @@ MACHINE_TYPE VmType;
     {
         Base = 0x80000000ULL;
 
-TryAgainWith3GB:
+    TryAgainWith3GB:
         for (Index = 0; Index < 0x10000; Index += 1, Base += PAGE_SIZE)
         {
             Ret = MmReadVirtualAddress(PartitionEntry,
-                                       Base,
-                                       Page,
-                                       PAGE_SIZE);
+                Base,
+                Page,
+                PAGE_SIZE);
             if (Ret == FALSE) continue;
 
             for (DwIndex = 4; DwIndex < (PAGE_SIZE / sizeof(ULONG)); DwIndex += 1)
@@ -492,35 +501,35 @@ TryAgainWith3GB:
     }
     else if (VmType == MACHINE_AMD64)
     {
-		//GetGuestReg(PartitionEntry);
-		//Base = 0xfffff80000000000ULL;
-		//Base = (GetGuestReg(PartitionEntry)) & 0xfffffFFFF0000000ULL;
-		Base = ((GetGuestReg(PartitionEntry)) - 0x1000000*8) & 0xfffffFFFFFFFF000ULL;
-		printf("Scan base = 0x%llx\n", Base);
+        //GetGuestReg(PartitionEntry);
+        //Base = 0xfffff80000000000ULL;
+        //Base = (GetGuestReg(PartitionEntry)) & 0xfffffFFFF0000000ULL;
+        Base = ((GetGuestReg(PartitionEntry)) - 0x1000000 * 8) & 0xfffffFFFFFFFF000ULL;
+        printf("Scan base = 0x%llx\n", Base);
         for (Index = 0; Index < 0x100000; Index += 1, Base += PAGE_SIZE)
         {
             Ret = MmReadVirtualAddress(PartitionEntry,
-                                       Base,
-                                       Page,
-                                       PAGE_SIZE);
+                Base,
+                Page,
+                PAGE_SIZE);
 
-			if (Ret == FALSE) {
-				printf("Error during MmReadVirtualAddress 0x%llx \n", Base);
-				continue;
-			}
-				
-			//printf("KdFindDbgDataBlock.Base 0x%p\n", Base);
-			
-			if ((Index & 0xFF) == 0) {
-				printf("    index = 0x%d\n", Index);
-				printf("    Scan base = 0x%llx\n", Base);
-			}
+            if (Ret == FALSE) {
+                printf("Error during MmReadVirtualAddress 0x%llx \n", Base);
+                continue;
+            }
+
+            //printf("KdFindDbgDataBlock.Base 0x%p\n", Base);
+
+            if ((Index & 0xFF) == 0) {
+                printf("    index = 0x%d\n", Index);
+                printf("    Scan base = 0x%llx\n", Base);
+            }
             for (DwIndex = 4; DwIndex < (PAGE_SIZE / sizeof(ULONG)); DwIndex += 1)
             {
                 if (Page[DwIndex] == KDBG_TAG)
                 {
                     DbgData = (PKDDEBUGGER_DATA64)((PUCHAR)(&Page[DwIndex]) - sizeof(LIST_ENTRY64));
-					printf("   KDBG struct was founded\n");
+                    printf("   KDBG struct was founded\n");
                     if (DbgData->Header.Size >= 0x400) continue;
 
                     if (DbgData->Header.List.Blink != DbgData->Header.List.Flink) continue;
@@ -533,7 +542,7 @@ TryAgainWith3GB:
                 }
             }
         }
-		printf("Index too small 0x%x\n", Index);
+        printf("Index too small 0x%x\n", Index);
     }
     if (Ret == FALSE) goto Exit;
 
@@ -565,9 +574,9 @@ Success:
         if (ProcBlock == NULL) goto Exit;
 
         Ret = MmReadVirtualAddress(PartitionEntry,
-                                   PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                   ProcBlock,
-                                   ProcBlockSize);
+            PartitionEntry->KiExcaliburData.KiProcessorBlock,
+            ProcBlock,
+            ProcBlockSize);
         if (Ret == FALSE)
         {
             free(ProcBlock);
@@ -575,8 +584,8 @@ Success:
         }
 
         for (NumberProcessors = 0;
-             ProcBlock[NumberProcessors] != 0;
-             NumberProcessors += 1)
+            ProcBlock[NumberProcessors] != 0;
+            NumberProcessors += 1)
         {
             if (NumberProcessors >= MAX_PROCESSORS) break;
         }
@@ -597,9 +606,9 @@ Success:
         if (ProcBlock == NULL) goto Exit;
 
         Ret = MmReadVirtualAddress(PartitionEntry,
-                                   PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                   ProcBlock,
-                                   ProcBlockSize);
+            PartitionEntry->KiExcaliburData.KiProcessorBlock,
+            ProcBlock,
+            ProcBlockSize);
 
         if (Ret == FALSE)
         {
@@ -608,8 +617,8 @@ Success:
         }
 
         for (NumberProcessors = 0;
-             ProcBlock[NumberProcessors] != 0;
-             NumberProcessors += 1)
+            ProcBlock[NumberProcessors] != 0;
+            NumberProcessors += 1)
         {
             if (NumberProcessors >= MAX_PROCESSORS) break;
         }
@@ -654,20 +663,22 @@ Exit:
     return Ret;
 }
 
-BOOL
-LaunchKd(LPCWSTR DumpFile)
+BOOLEAN
+LaunchKd(
+    _In_ LPCWSTR DumpFile
+)
 {
-STARTUPINFOW si;
-PROCESS_INFORMATION pi;
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
 
-WCHAR CommandLine[MAX_PATH * 3];
+    WCHAR CommandLine[MAX_PATH * 3];
 
-DEBUG_EVENT DbgEvent;
-ULONG dwContinueStatus;
+    DEBUG_EVENT DbgEvent;
+    ULONG dwContinueStatus;
 
-// CONTEXT Context;
+    // CONTEXT Context;
 
-HANDLE ThreadHandle[0xFFFF];
+    HANDLE ThreadHandle[0xFFFF];
 
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
@@ -686,12 +697,12 @@ HANDLE ThreadHandle[0xFFFF];
     if (UseWinDbg == FALSE)
     {
         swprintf_s(CommandLine, sizeof(CommandLine) / sizeof(CommandLine[0]),
-                   L"kd.exe -z \"%s\"", DumpFile);
+            L"kd.exe -z \"%s\"", DumpFile);
     }
     else
     {
         swprintf_s(CommandLine, sizeof(CommandLine) / sizeof(CommandLine[0]),
-                   L"windbg.exe -z \"%s\"", DumpFile);
+            L"windbg.exe -z \"%s\"", DumpFile);
     }
 
     //if (!CreateProcess(NULL,
@@ -706,17 +717,17 @@ HANDLE ThreadHandle[0xFFFF];
     //    &pi)
     //) 
 
-	if (!CreateProcessW(NULL,
-	    CommandLine,
-	    NULL,
-	    NULL,
-	    TRUE,
-	    DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS,
-	    NULL,
-	    NULL,
-	    &si,
-	    &pi)
-	) 
+    if (!CreateProcessW(NULL,
+        CommandLine,
+        NULL,
+        NULL,
+        TRUE,
+        DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS,
+        NULL,
+        NULL,
+        &si,
+        &pi)
+        )
     {
         if (GetLastError() == ERROR_FILE_NOT_FOUND)
         {
@@ -743,70 +754,70 @@ HANDLE ThreadHandle[0xFFFF];
         dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
         switch (DbgEvent.dwDebugEventCode)
         {
-            case EXCEPTION_DEBUG_EVENT:
-                switch (DbgEvent.u.Exception.ExceptionRecord.ExceptionCode)
-                {
-                    case EXCEPTION_BREAKPOINT:
-                        NtStatus = NtDuplicateObject(GetCurrentProcess(), FunctionTable.PartitionHandle,
-                                                     pi.hProcess, &DuplicatedHandle,
-                                                     0, FALSE, DUPLICATE_SAME_ACCESS);
-                        if (NtStatus != STATUS_SUCCESS) goto Exit;
-                        FunctionTable.PartitionHandle = DuplicatedHandle;
-                        HookKd(pi.hProcess, pi.dwProcessId);
-                        dwContinueStatus = DBG_CONTINUE;
+        case EXCEPTION_DEBUG_EVENT:
+            switch (DbgEvent.u.Exception.ExceptionRecord.ExceptionCode)
+            {
+            case EXCEPTION_BREAKPOINT:
+                NtStatus = NtDuplicateObject(GetCurrentProcess(), FunctionTable.PartitionHandle,
+                    pi.hProcess, &DuplicatedHandle,
+                    0, FALSE, DUPLICATE_SAME_ACCESS);
+                if (NtStatus != STATUS_SUCCESS) goto Exit;
+                FunctionTable.PartitionHandle = DuplicatedHandle;
+                HookKd(pi.hProcess, pi.dwProcessId);
+                dwContinueStatus = DBG_CONTINUE;
 
-                        /*
-                        Context.ContextFlags = CONTEXT_ALL;
-                        GetThreadContext(ThreadHandle[DbgEvent.dwThreadId], // pi.hThread,
-                                         &Context);
-                        wprintf(L"RAX = 0x%I64X RBX = 0x%I64X RCX = 0x%I64X\n",
-                                Context.Rax, Context.Rbx, Context.Rdx);
-                        wprintf(L"RDX = 0x%I64X RSI = 0x%I64X RDI = 0x%I64X\n",
-                            Context.Rdx, Context.Rsi, Context.Rdi);
-                        wprintf(L"R8 = 0x%I64X R9 = 0x%I64X R10 = 0x%I64X\n",
-                            Context.R8, Context.R9, Context.R10);
-                        wprintf(L"R11 = 0x%I64X R12 = 0x%I64X R13 = 0x%I64X\n",
-                            Context.R11, Context.R12, Context.R13);
-                        wprintf(L"R14 = 0x%I64X R15 = 0x%I64X\n",
-                                Context.R14, Context.R15);
-                        wprintf(L"RSP = 0x%I64X RBP = 0x%I64X RIP = %I64X\n",
-                            Context.Rsp, Context.Rbp, Context.Rip);
-                        */
-
-                    break;
-                    case EXCEPTION_ACCESS_VIOLATION:
-                        /*
-                        wprintf(L"ACCESS VIOLATION AT %X (Tid = %d)\n",
-                                DbgEvent.u.Exception.ExceptionRecord.ExceptionAddress,
-                                DbgEvent.dwThreadId);
-                        Context.ContextFlags = CONTEXT_ALL;
-                        GetThreadContext(ThreadHandle[DbgEvent.dwThreadId], // pi.hThread,
-                                         &Context);
-                        
-                        wprintf(L"RAX = 0x%I64X RBX = 0x%I64X RCX = 0x%I64X\n",
-                                Context.Rax, Context.Rbx, Context.Rdx);
-                        wprintf(L"RDX = 0x%I64X RSI = 0x%I64X RDI = 0x%I64X\n",
-                            Context.Rdx, Context.Rsi, Context.Rdi);
-                        wprintf(L"R8 = 0x%I64X R9 = 0x%I64X R10 = 0x%I64X\n",
-                            Context.R8, Context.R9, Context.R10);
-                        wprintf(L"R11 = 0x%I64X R12 = 0x%I64X R13 = 0x%I64X\n",
-                            Context.R11, Context.R12, Context.R13);
-                        wprintf(L"R14 = 0x%I64X R15 = 0x%I64X\n",
-                                Context.R14, Context.R15);
-                        wprintf(L"RSP = 0x%I64X RBP = 0x%I64X RIP = %I64X\n",
-                            Context.Rsp, Context.Rbp, Context.Rip);
-                        */
-                    break;
-                }
-            break;
-            case CREATE_THREAD_DEBUG_EVENT:
                 /*
-                wprintf(L"DbgEvent.dwThreadId: %d\n"
-                        L"DbgEvent.u.CreateThread.hThread: %x\n",
-                         DbgEvent.dwThreadId,
-                         DbgEvent.u.CreateThread.hThread);
+                Context.ContextFlags = CONTEXT_ALL;
+                GetThreadContext(ThreadHandle[DbgEvent.dwThreadId], // pi.hThread,
+                                 &Context);
+                wprintf(L"RAX = 0x%I64X RBX = 0x%I64X RCX = 0x%I64X\n",
+                        Context.Rax, Context.Rbx, Context.Rdx);
+                wprintf(L"RDX = 0x%I64X RSI = 0x%I64X RDI = 0x%I64X\n",
+                    Context.Rdx, Context.Rsi, Context.Rdi);
+                wprintf(L"R8 = 0x%I64X R9 = 0x%I64X R10 = 0x%I64X\n",
+                    Context.R8, Context.R9, Context.R10);
+                wprintf(L"R11 = 0x%I64X R12 = 0x%I64X R13 = 0x%I64X\n",
+                    Context.R11, Context.R12, Context.R13);
+                wprintf(L"R14 = 0x%I64X R15 = 0x%I64X\n",
+                        Context.R14, Context.R15);
+                wprintf(L"RSP = 0x%I64X RBP = 0x%I64X RIP = %I64X\n",
+                    Context.Rsp, Context.Rbp, Context.Rip);
                 */
-                ThreadHandle[DbgEvent.dwThreadId] = DbgEvent.u.CreateThread.hThread;
+
+                break;
+            case EXCEPTION_ACCESS_VIOLATION:
+                /*
+                wprintf(L"ACCESS VIOLATION AT %X (Tid = %d)\n",
+                        DbgEvent.u.Exception.ExceptionRecord.ExceptionAddress,
+                        DbgEvent.dwThreadId);
+                Context.ContextFlags = CONTEXT_ALL;
+                GetThreadContext(ThreadHandle[DbgEvent.dwThreadId], // pi.hThread,
+                                 &Context);
+
+                wprintf(L"RAX = 0x%I64X RBX = 0x%I64X RCX = 0x%I64X\n",
+                        Context.Rax, Context.Rbx, Context.Rdx);
+                wprintf(L"RDX = 0x%I64X RSI = 0x%I64X RDI = 0x%I64X\n",
+                    Context.Rdx, Context.Rsi, Context.Rdi);
+                wprintf(L"R8 = 0x%I64X R9 = 0x%I64X R10 = 0x%I64X\n",
+                    Context.R8, Context.R9, Context.R10);
+                wprintf(L"R11 = 0x%I64X R12 = 0x%I64X R13 = 0x%I64X\n",
+                    Context.R11, Context.R12, Context.R13);
+                wprintf(L"R14 = 0x%I64X R15 = 0x%I64X\n",
+                        Context.R14, Context.R15);
+                wprintf(L"RSP = 0x%I64X RBP = 0x%I64X RIP = %I64X\n",
+                    Context.Rsp, Context.Rbp, Context.Rip);
+                */
+                break;
+            }
+            break;
+        case CREATE_THREAD_DEBUG_EVENT:
+            /*
+            wprintf(L"DbgEvent.dwThreadId: %d\n"
+                    L"DbgEvent.u.CreateThread.hThread: %x\n",
+                     DbgEvent.dwThreadId,
+                     DbgEvent.u.CreateThread.hThread);
+            */
+            ThreadHandle[DbgEvent.dwThreadId] = DbgEvent.u.CreateThread.hThread;
             break;
         }
 

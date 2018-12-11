@@ -35,7 +35,7 @@ typedef struct _EXCALIBUR_DATA {
     ULONG     MinorVersion;
     ULONG     NtBuildNumber;
     ULONGLONG DirectoryTableBase;
-    BOOL      PaeEnabled;
+    BOOLEAN      PaeEnabled;
 
     ULONGLONG KernelBase;
     ULONG     SizeOfKernelImage;

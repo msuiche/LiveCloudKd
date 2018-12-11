@@ -54,7 +54,7 @@ Revision History:
 typedef struct _HVDD_MEMORY_BLOCK {
     MB_HANDLE MemoryHandle;
     USHORT Hits;
-    BOOL IsMemoryBlock;
+    BOOLEAN IsMemoryBlock;
     ULONG64 PageCountTotal;
 } HVDD_MEMORY_BLOCK, *PHVDD_MEMORY_BLOCK;
 
@@ -79,131 +79,133 @@ typedef struct _HVDD_PARTITION {
 //
 PHVDD_PARTITION
 GetPartitions(
-    PULONG PartitionTableCount
+    _Out_ PULONG PartitionTableCount
 );
 
-BOOL
+BOOLEAN
 DestroyPartitions(
+    VOID
 );
 
 //
 // memoryblock.c
 //
-BOOL
+BOOLEAN
 GetMemoryBlocks(
-    PHVDD_PARTITION PartitionEntry
+    _Inout_ PHVDD_PARTITION PartitionEntry
 );
 
-BOOL
+BOOLEAN
 MmReadPageAtVirtualAddress(
-    PHVDD_PARTITION PartitionEntry,
-    ULONG64 Va,
-    PVOID Buffer,
-    ULONG Size
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 Va,
+    _Out_ PVOID Buffer,
+    _In_ ULONG Size
 );
 
-BOOL
+BOOLEAN
 MmReadVirtualAddress(
-    PHVDD_PARTITION PartitionEntry,
-    ULONG64 Va,
-    PVOID Buffer,
-    ULONG Size
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 Va,
+    _Out_ PVOID Buffer,
+    _In_ ULONG Size
 );
 
 PHYSICAL_ADDRESS
 MmGetPhysicalAddress(
-    PHVDD_PARTITION PartitionEntry,
-    ULONG64 Va
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ ULONG64 Va
 );
 
 //
 // dump.c
 //
-BOOL
+BOOLEAN
 DumpVirtualMachine(
-    PHVDD_PARTITION PartitionEntry,
-    LPCWSTR DestinationFile
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ LPCWSTR DestinationFile
 );
 
-BOOL
+BOOLEAN
 DumpLiveVirtualMachine(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 );
 
-BOOL
+BOOLEAN
 DumpCrashVirtualMachine(
-    PHVDD_PARTITION PartitionEntry,
-    LPCWSTR DestinationFile
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ LPCWSTR DestinationFile
 );
 
 //
 // file.c
 //
-BOOL
+BOOLEAN
 CreateDestinationFile(
-    LPCWSTR Filename,
-    PHANDLE Handle
+    _In_ LPCWSTR Filename,
+    _Out_ PHANDLE Handle
 );
 
-BOOL
+BOOLEAN
 WriteFileSynchronous(
-    HANDLE Handle,
-    PVOID Buffer,
-    ULONG NbOfBytesToWrite
+    _In_ HANDLE Handle,
+    _In_ PVOID Buffer,
+    _In_ ULONG NbOfBytesToWrite
 );
 
 //
 // kd.c
 //
-BOOL
+BOOLEAN
 KdFindDbgDataBlock(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 );
 
 //
 // misc.c
 //
-BOOL
+BOOLEAN
 EnablePrivilege(
-    WCHAR *PrivilegeName
+    _In_ WCHAR *PrivilegeName
 );
 
 ULONG
 GetHandleCount(
+    VOID
 );
 
 HANDLE
 OpenProcessWithId(
-    ULONG ProcessId
+    _In_ ULONG ProcessId
 );
 
-BOOL
+BOOLEAN
 GetMmNonPagedPoolLimit(
-    PULONG64 MmNonPagedPoolStart,
-    PULONG64 MmNonPagedPoolEnd
+    _Out_ PULONG64 MmNonPagedPoolStart,
+    _Out_ PULONG64 MmNonPagedPoolEnd
 );
 
 VOID
 White(
-    LPCWSTR Format,
+    _In_ LPCWSTR Format,
     ...
 );
 
 VOID
 Red(
-    LPCWSTR Format,
+    _In_ LPCWSTR Format,
     ...
 );
 
 VOID
 Green(
-    LPCWSTR Format,
+    _In_ LPCWSTR Format,
     ...
 );
 
 USHORT
 GetConsoleTextAttribute(
-    HANDLE hConsole
+    _In_ HANDLE hConsole
 );
 
 //
@@ -211,19 +213,19 @@ GetConsoleTextAttribute(
 //
 PDUMP_HEADER32
 DumpFillHeader32(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 );
 
 PDUMP_HEADER64
 DumpFillHeader64(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 );
 
-BOOL
+BOOLEAN
 DumpFillHeader(
-    PHVDD_PARTITION PartitionEntry,
-    PVOID *Header,
-    PULONG HeaderSize
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ PVOID *Header,
+    _In_ PULONG HeaderSize
 );
 
 //
@@ -231,12 +233,17 @@ DumpFillHeader(
 //
 MACHINE_TYPE
 GetMachineType(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 );
 
-BOOL
+BOOLEAN
 LaunchKd(
-    LPCWSTR DumpFile
+    _In_ LPCWSTR DumpFile
 );
 
-extern BOOL UseWinDbg;
+extern BOOLEAN UseWinDbg;
+
+typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+
+typedef BOOL(WINAPI *pVidDmMemoryBlockQueryTopology)(HANDLE, MB_HANDLE, PVOID, ULONG, PULONG64, PULONG64, PULONG64);
+typedef BOOL(WINAPI *pVidQueryMemoryBlockMbpCount)(HANDLE, MB_HANDLE, PULONG64, PULONG64);

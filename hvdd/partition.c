@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    - 
+    -
 
 
 Environment:
@@ -27,94 +27,98 @@ PHVDD_PARTITION PartitionTable = NULL;
 ULONG PartitionCount = 0;
 ULONG MaxPartitionCount = 64;
 
+RTL_OSVERSIONINFOW
+GetRealOSVersion(
+    VOID
+)
+{
+    HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+    if (hMod) {
+        RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
+        if (fxPtr != NULL) {
+            RTL_OSVERSIONINFOW rovi = { 0 };
+            rovi.dwOSVersionInfoSize = sizeof(rovi);
+            if (fxPtr(&rovi) == STATUS_SUCCESS) {
+                printf("rovi.dwBuildNumber : %08d\n", rovi.dwBuildNumber);
+                printf("rovi.dwMajorVersion : %08d\n", rovi.dwMajorVersion);
+                printf("rovi.dwMinorVersion : %08d\n", rovi.dwMinorVersion);
+                return rovi;
+            }
+        }
+    }
 
-RTL_OSVERSIONINFOW GetRealOSVersion() {
-		HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
-		if (hMod) {
-			RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
-			if (fxPtr != NULL) {
-				RTL_OSVERSIONINFOW rovi = { 0 };
-				rovi.dwOSVersionInfoSize = sizeof(rovi);
-				if (fxPtr(&rovi) == STATUS_SUCCESS) {
-					printf("rovi.dwBuildNumber : %08d\n", rovi.dwBuildNumber);
-					printf("rovi.dwMajorVersion : %08d\n", rovi.dwMajorVersion);
-					printf("rovi.dwMinorVersion : %08d\n", rovi.dwMinorVersion);
-					return rovi;
-				}
-			}
-		}
-	RTL_OSVERSIONINFOW rovi = { 0 };	
-	return rovi;
+    RTL_OSVERSIONINFOW rovi = { 0 };
+    return rovi;
 }
 
-
-
-BOOL
-
-HvlckdGetPartitionFriendlyName(PHVDD_PARTITION PartitionEntry,
-	HANDLE PartitionHandle)
+BOOLEAN
+HvlckdGetPartitionFriendlyName(
+    _Inout_ PHVDD_PARTITION PartitionEntry,
+    _In_ HANDLE PartitionHandle
+)
 {
-	LPCWSTR wszPath = L"\\\\.\\hvlckd";
-	HANDLE hDevice = INVALID_HANDLE_VALUE;  // handle to the drive to be examined 
-	BOOL bResult = FALSE;                 // results flag
-	DWORD junk = 0;                     // discard results
-	PVOID pOutBuf = NULL;
-	DWORD dwOutBufSize = 0x200; //Vid.sys info
-	ULONG bytesReturned;
+    LPCWSTR wszPath = L"\\\\.\\hvlckd";
+    HANDLE hDevice = INVALID_HANDLE_VALUE;  // handle to the drive to be examined 
+    BOOLEAN bResult = FALSE;                 // results flag
+    DWORD junk = 0;                     // discard results
+    PVOID pOutBuf = NULL;
+    DWORD dwOutBufSize = 0x200; //Vid.sys info
+    ULONG bytesReturned;
 
-	GetRealOSVersion();
-	pOutBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwOutBufSize);
-	if (!pOutBuf) {
-		wprintf(L"HvlckdGetPartitionFriendlyName HeapAlloc error\n");
-		return FALSE;
-	}
-	hDevice = CreateFileW(wszPath,          // drive to open
-		GENERIC_READ|GENERIC_WRITE,                
-		FILE_SHARE_READ | // share mode
-		FILE_SHARE_WRITE,
-		NULL,             // default security attributes
-		OPEN_EXISTING,    // disposition
-		FILE_ATTRIBUTE_NORMAL,                // file attributes
-		0);            // do not copy file attributes
+    GetRealOSVersion();
+    pOutBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwOutBufSize);
+    if (!pOutBuf) {
+        wprintf(L"HvlckdGetPartitionFriendlyName HeapAlloc error\n");
+        return FALSE;
+    }
 
-	if (!hDevice)    // cannot open the drive
-	{
-		printf("Error in CreateFile : %x\n", GetLastError());
-		return FALSE;
-	}
+    hDevice = CreateFileW(wszPath,          // drive to open
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | // share mode
+        FILE_SHARE_WRITE,
+        NULL,             // default security attributes
+        OPEN_EXISTING,    // disposition
+        FILE_ATTRIBUTE_NORMAL,                // file attributes
+        0);            // do not copy file attributes
 
-	bResult = DeviceIoControl(hDevice,                       // device to be queried
-		IOCTL_GET_FRIENDLY_PARTIION_NAME, // operation to perform
-		&PartitionHandle, 
-		sizeof(PartitionHandle),                       
-		pOutBuf, 
-		dwOutBufSize,            // output buffer
-		&bytesReturned,                         // # bytes returned
-		NULL);          // synchronous I/O
-	if (!bResult)
-		{
-			printf("Error in DeviceIoControl : %08X\n", GetLastError());
-			return FALSE;
-		}
-	printf("Bytes returned : %08X\n", bytesReturned);
-	if (bytesReturned > 0) {
-		PartitionEntry->PartitionHandle = PartitionHandle;
-		RtlCopyMemory(PartitionEntry->FriendlyName, pOutBuf, dwOutBufSize*2);
-		//wprintf("VMName: \n", &PartitionEntry->FriendlyName);
-		CloseHandle(hDevice);
-		return TRUE;
-	}
-	CloseHandle(hDevice);
-	return FALSE;
+    if (!hDevice)    // cannot open the drive
+    {
+        printf("Error in CreateFile : %x\n", GetLastError());
+        return FALSE;
+    }
+
+    bResult = DeviceIoControl(hDevice,                       // device to be queried
+        IOCTL_GET_FRIENDLY_PARTIION_NAME, // operation to perform
+        &PartitionHandle,
+        sizeof(PartitionHandle),
+        pOutBuf,
+        dwOutBufSize,            // output buffer
+        &bytesReturned,                         // # bytes returned
+        NULL);          // synchronous I/O
+    if (!bResult)
+    {
+        printf("Error in DeviceIoControl : %08X\n", GetLastError());
+        return FALSE;
+    }
+    printf("Bytes returned : %08X\n", bytesReturned);
+    if (bytesReturned > 0) {
+        PartitionEntry->PartitionHandle = PartitionHandle;
+        RtlCopyMemory(PartitionEntry->FriendlyName, pOutBuf, dwOutBufSize * 2);
+        //wprintf("VMName: \n", &PartitionEntry->FriendlyName);
+        CloseHandle(hDevice);
+        return TRUE;
+    }
+    CloseHandle(hDevice);
+    return FALSE;
 }
 
-
-
-BOOL
-GetPartitionFriendlyName(PHVDD_PARTITION PartitionEntry,
-                         HANDLE PartitionHandle)
+BOOLEAN
+GetPartitionFriendlyName(
+    _Inout_ PHVDD_PARTITION PartitionEntry,
+    _In_ HANDLE PartitionHandle
+)
 {
-BOOL Ret;
+    BOOLEAN Ret;
 
     Ret = FALSE;
     RtlZeroMemory(PartitionEntry->FriendlyName, sizeof(PartitionEntry->FriendlyName));
@@ -128,32 +132,29 @@ BOOL Ret;
         PartitionEntry->PartitionHandle = PartitionHandle;
     }
 
-	White(L"You use an unfriendly Windows version. Access to VidGetPartitionFriendlyName() function is denied.\n");
+    White(L"You use an unfriendly Windows version. Access to VidGetPartitionFriendlyName() function is denied.\n");
 
     return Ret;
-} 
+}
 
-BOOL
-IsPartitionHandle(PHVDD_PARTITION PartitionEntry,
-                  HANDLE Handle)
+BOOLEAN
+IsPartitionHandle(
+    _In_ PHVDD_PARTITION PartitionEntry,
+    _In_ HANDLE Handle
+)
 {
-POBJECT_TYPE_INFORMATION pObjectTypeInformation;
-POBJECT_NAME_INFORMATION pObjectNameInformation;
+    POBJECT_TYPE_INFORMATION pObjectTypeInformation = NULL;
+    POBJECT_NAME_INFORMATION pObjectNameInformation = NULL;
 
-NTSTATUS NtStatus;
-HANDLE DuplicatedHandle;
+    NTSTATUS NtStatus;
+    HANDLE DuplicatedHandle = INVALID_HANDLE_VALUE;
 
-ULONG BytesRet;
+    ULONG BytesRet;
 
-BOOL Ret;
-
-    Ret = FALSE;
-    pObjectTypeInformation = NULL;
-    pObjectNameInformation = NULL;
-    DuplicatedHandle = INVALID_HANDLE_VALUE;
+    BOOLEAN Ret = FALSE;
 
     NtStatus = NtDuplicateObject(PartitionEntry->WorkerHandle, Handle, GetCurrentProcess(),
-                                 &DuplicatedHandle, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        &DuplicatedHandle, 0, FALSE, DUPLICATE_SAME_ACCESS);
 
     if (NtStatus != STATUS_SUCCESS)
     {
@@ -161,27 +162,27 @@ BOOL Ret;
     }
 
     NtStatus = NtQueryObject(DuplicatedHandle, ObjectTypeInformation, pObjectTypeInformation,
-                             0, &BytesRet);
+        0, &BytesRet);
     if (NtStatus != STATUS_INFO_LENGTH_MISMATCH) goto Exit;
 
     pObjectTypeInformation = (POBJECT_TYPE_INFORMATION)malloc(BytesRet);
     if (pObjectTypeInformation == NULL) goto Exit;
 
     NtStatus = NtQueryObject(DuplicatedHandle, ObjectTypeInformation, pObjectTypeInformation,
-                             BytesRet, &BytesRet);
+        BytesRet, &BytesRet);
     if (NtStatus != STATUS_SUCCESS) goto Exit;
 
     if (lstrcmpW(pObjectTypeInformation->TypeName.Buffer, L"File") == 0)
     {
         NtStatus = NtQueryObject(DuplicatedHandle, ObjectNameInformation, pObjectNameInformation,
-                                 0, &BytesRet);
+            0, &BytesRet);
         if (NtStatus != STATUS_INFO_LENGTH_MISMATCH) goto Exit;
 
         pObjectNameInformation = (POBJECT_NAME_INFORMATION)malloc(BytesRet);
         if (pObjectNameInformation == NULL) goto Exit;
 
         NtStatus = NtQueryObject(DuplicatedHandle, ObjectNameInformation, pObjectNameInformation,
-                                 BytesRet, &BytesRet);
+            BytesRet, &BytesRet);
         if (NtStatus != STATUS_SUCCESS) goto Exit;
 
         if (memcmp(pObjectNameInformation->Name.Buffer, L"\\Device\\000000", sizeof(L"\\Device\\000000") - sizeof(WCHAR)) == 0)
@@ -194,47 +195,44 @@ BOOL Ret;
             //{
             //    Ret = TRUE;
             //}
-			//HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle);
-			wprintf(L"DuplicatedHandle. Handle -> %p\n", DuplicatedHandle);
-			if (HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle) == TRUE)
-			{
-				Ret = TRUE;
-			}
+            //HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle);
+            wprintf(L"DuplicatedHandle. Handle -> %p\n", DuplicatedHandle);
+            if (HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle) == TRUE)
+            {
+                Ret = TRUE;
+            }
         }
     }
 
 Exit:
     if (pObjectNameInformation) free(pObjectNameInformation);
     if (pObjectTypeInformation) free(pObjectTypeInformation);
-	//too many handle for WDAG vmwp.exe. Probably, uncomment for release 
-	//if (Ret == FALSE){
-	//	CloseHandle(DuplicatedHandle);
-	//}
-	return Ret;
+    //too many handle for WDAG vmwp.exe. Probably, uncomment for release 
+    //if (Ret == FALSE){
+    //	CloseHandle(DuplicatedHandle);
+    //}
+    return Ret;
 }
 
-BOOL
+BOOLEAN
 GetPartitionInformation(
-    PHVDD_PARTITION PartitionEntry
+    _In_ PHVDD_PARTITION PartitionEntry
 )
 {
-    PSYSTEM_HANDLE_INFORMATION pSystemHandleInformation;
+    PSYSTEM_HANDLE_INFORMATION pSystemHandleInformation = NULL;
 
     ULONG HandleCount;
 
     ULONG Size;
 
     NTSTATUS NtStatus;
-	ULONG BytesRet;
+    ULONG BytesRet;
 
     SIZE_T NumberOfEntries;
 
     ULONG Index;
 
-    BOOL Ret;
-
-    Ret = FALSE;
-    pSystemHandleInformation = NULL;
+    BOOLEAN Ret = FALSE;
 
     if (PartitionEntry->WorkerPid == 0) goto Exit;
 
@@ -261,13 +259,13 @@ GetPartitionInformation(
 
     BytesRet = 0;
     NtStatus = NtQuerySystemInformation(SystemHandleInformation,
-                                        pSystemHandleInformation,
-                                        Size,
-                                        &BytesRet);
+        pSystemHandleInformation,
+        Size,
+        &BytesRet);
     if (NtStatus != STATUS_SUCCESS)
     {
         wprintf(L"NtQuerySystemInformation(SystemHandleInformation) Error = %x (0x%x instead of 0x%x)\n",
-                NtStatus, Size, BytesRet);
+            NtStatus, Size, BytesRet);
         goto Exit;
     }
 
@@ -285,7 +283,7 @@ GetPartitionInformation(
         if (pSystemHandleInformation->Handles[Index].UniqueProcessId == PartitionEntry->WorkerPid)
         {
             if (IsPartitionHandle(PartitionEntry,
-                                 (HANDLE)pSystemHandleInformation->Handles[Index].HandleValue) == TRUE)
+                (HANDLE)pSystemHandleInformation->Handles[Index].HandleValue) == TRUE)
             {
                 //
                 // if IsPartitionHandle() returns TRUE. PartitionEntry is automatically filled with
@@ -318,19 +316,21 @@ Exit:
 }
 
 PHVDD_PARTITION
-GetPartitions(PULONG PartitionTableCount)
+GetPartitions(
+    _Out_ PULONG PartitionTableCount
+)
 {
-	HANDLE SnapshotHandle = NULL;
-	PROCESSENTRY32W ProcessEntry;
+    HANDLE SnapshotHandle = NULL;
+    PROCESSENTRY32W ProcessEntry;
 
-	BOOL Ret;
+    BOOLEAN Ret;
 
     Ret = FALSE;
 
     if (PartitionTable != NULL)
     {
-            *PartitionTableCount = PartitionCount;
-            return PartitionTable;
+        *PartitionTableCount = PartitionCount;
+        return PartitionTable;
     }
 
     PartitionTable = (PHVDD_PARTITION)malloc(MaxPartitionCount * sizeof(HVDD_PARTITION));
@@ -338,11 +338,11 @@ GetPartitions(PULONG PartitionTableCount)
     RtlZeroMemory(PartitionTable, MaxPartitionCount * sizeof(HVDD_PARTITION));
 
 
-    SnapshotHandle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
+    SnapshotHandle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (SnapshotHandle == INVALID_HANDLE_VALUE)
     {
         wprintf(L"EnumPartitions - CreateToolhelp32Snapshot(Error = %d)\n",
-                GetLastError());
+            GetLastError());
         goto Exit;
     }
 
@@ -351,13 +351,13 @@ GetPartitions(PULONG PartitionTableCount)
     if (!Process32FirstW(SnapshotHandle, &ProcessEntry))
     {
         wprintf(L"EnumPartitions - Process32First(Error = %d)\n",
-                GetLastError());
+            GetLastError());
         goto Exit;
     }
 
-    while (Process32NextW(SnapshotHandle,&ProcessEntry) != 0 )
+    while (Process32NextW(SnapshotHandle, &ProcessEntry) != 0)
     {
-        if(_wcsicmp(ProcessEntry.szExeFile, L"vmwp.exe") == 0)
+        if (_wcsicmp(ProcessEntry.szExeFile, L"vmwp.exe") == 0)
         {
             PartitionTable[PartitionCount].WorkerPid = ProcessEntry.th32ProcessID;
             PartitionTable[PartitionCount].PartitionHandle = INVALID_HANDLE_VALUE;
@@ -389,10 +389,12 @@ Exit:
     return NULL;
 }
 
-BOOL
-DestroyPartitions()
+BOOLEAN
+DestroyPartitions(
+    VOID
+)
 {
-ULONG i;
+    ULONG i;
 
     for (i = 0; i < PartitionCount; i += 1)
     {
