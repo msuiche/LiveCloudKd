@@ -48,12 +48,12 @@ BOOL Ret;
     BitMapBuffer = malloc(0x20000); // MAX 4GB MAP 0x20000 original
     if (BitMapBuffer == NULL) return FALSE;
 
-    VidDmMemoryBlockQueryTopology = (pVidDmMemoryBlockQueryTopology)GetProcAddress(LoadLibrary(L"vid.dll"), "VidDmMemoryBlockQueryTopology");
+    VidDmMemoryBlockQueryTopology = (pVidDmMemoryBlockQueryTopology)GetProcAddress(LoadLibraryW(L"vid.dll"), "VidDmMemoryBlockQueryTopology");
 
     if (VidDmMemoryBlockQueryTopology == NULL)
     {
         // Hyper-V R2 SP0
-        VidQueryMemoryBlockMbpCount = (pVidQueryMemoryBlockMbpCount)GetProcAddress(LoadLibrary(L"vid.dll"), "VidQueryMemoryBlockMbpCount");
+        VidQueryMemoryBlockMbpCount = (pVidQueryMemoryBlockMbpCount)GetProcAddress(LoadLibraryW(L"vid.dll"), "VidQueryMemoryBlockMbpCount");
         if (VidQueryMemoryBlockMbpCount == NULL)
         {
             // Doh !?
@@ -351,7 +351,7 @@ GetMemoryBlocks(
             Blocks[i].PageCountTotal = PageCountTotal;
 
             //printf("Blocks[0x%x].PageCountTotal = 0x%llx\n", i, Blocks[i].PageCountTotal);
-			printf("Blocks[0x%x].MemoryHandle= 0x%llx\n", i, Blocks[i].MemoryHandle);
+			printf("Blocks[0x%x].MemoryHandle=%p\n", i, Blocks[i].MemoryHandle);
 
             MemoryBlockCount += 1;
 
@@ -443,9 +443,9 @@ MmReadPageAtVirtualAddress(PHVDD_PARTITION PartitionEntry,
 UINT64 MemoryBlockPageIndex = 0x6666, MemoryBlockGpaRangeFlags = 0x5555;
 HV_GVA_PAGE_NUMBER GvaPage = 0x4321, GpaPage = 0x1234;
 XMM_ALIGN64 HV_TRANSLATE_GVA_RESULT GvaResult = {9};
-PVOID Handler = 0x1111;
-MB_HANDLE MemoryBlockHandle,i = 0x2222;
-PVOID MmioContext = 0x3333;
+PVOID Handler = (PVOID)0x1111;
+MB_HANDLE MemoryBlockHandle, i = (MB_HANDLE)0x2222;
+PVOID MmioContext = (PVOID)0x3333;
 
 BOOL Ret;
 

@@ -40,7 +40,7 @@ BOOL Ret;
         goto Exit;
     }
 
-    if (!LookupPrivilegeValue(NULL, PrivilegeName, &TokenPrivileges.Privileges[0].Luid))
+    if (!LookupPrivilegeValueW(NULL, PrivilegeName, &TokenPrivileges.Privileges[0].Luid))
     {
         wprintf(L"EnablePrivilege - LookupPrivilegeValue(Error = %d)\n",
                 GetLastError());
@@ -69,12 +69,12 @@ Exit:
 ULONG
 GetHandleCount()
 {
-PSYSTEM_PROCESS_INFORMATION pSystemProcessInfo, Entry;
-SIZE_T BytesRet;
+	PSYSTEM_PROCESS_INFORMATION pSystemProcessInfo, Entry;
+	ULONG BytesRet;
 
-NTSTATUS NtStatus;
+	NTSTATUS NtStatus;
 
-ULONG HandleCount;
+	ULONG HandleCount;
 
     pSystemProcessInfo = NULL;
     HandleCount = 0;
@@ -118,7 +118,7 @@ Exit:
 }
 
 HANDLE
-OpenProcessWithId(ULONG ProcessId)
+OpenProcessWithId(HANDLE ProcessId)
 {
     OBJECT_ATTRIBUTES ObjectAttributes;
     CLIENT_ID ClientId;
@@ -129,7 +129,7 @@ OpenProcessWithId(ULONG ProcessId)
     RtlZeroMemory(&ClientId, sizeof(CLIENT_ID));
 
 
-    ClientId.UniqueProcess = (HANDLE)ProcessId;
+    ClientId.UniqueProcess = ProcessId;
     InitializeObjectAttributes(&ObjectAttributes, NULL, 0, NULL, NULL);
     NtStatus = NtOpenProcess(&Handle, PROCESS_DUP_HANDLE | PROCESS_VM_READ, &ObjectAttributes, &ClientId);
 

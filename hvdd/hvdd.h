@@ -22,9 +22,8 @@ Revision History:
 --*/
 #define _AMD64_
 
-#define WIN32_NO_STATUS   /* Tell Windows headers you'll use ntstatus.s from NDK */
 #include <windows.h>      /* Declare Windows Headers like you normally would */
-#include <ntndk.h>        /* Declare the NDK Headers */
+// #include <ntndk.h>        /* Declare the NDK Headers */
 
 #include <stdio.h>
 #include <tlhelp32.h>
@@ -34,8 +33,9 @@ Revision History:
 #include <dbghelp.h>
 #include <wdbgexts.h>
 
+#include "ntdefs.h"
 #include "dbg.h"
-#include "vid.h"
+#include "vid/vid.h"
 #include "dmp.h"
 
 #include "hooker.h"

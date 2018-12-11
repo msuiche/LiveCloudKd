@@ -27,15 +27,11 @@ PHVDD_PARTITION PartitionTable = NULL;
 ULONG PartitionCount = 0;
 ULONG MaxPartitionCount = 64;
 
-typedef LONG NTSTATUS, *PNTSTATUS;
-#define STATUS_SUCCESS (0x00000000)
-typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
-
 
 RTL_OSVERSIONINFOW GetRealOSVersion() {
 		HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
 		if (hMod) {
-			RtlGetVersionPtr fxPtr = GetProcAddress(hMod, "RtlGetVersion");
+			RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
 			if (fxPtr != NULL) {
 				RTL_OSVERSIONINFOW rovi = { 0 };
 				rovi.dwOSVersionInfoSize = sizeof(rovi);
@@ -131,7 +127,8 @@ BOOL Ret;
     {
         PartitionEntry->PartitionHandle = PartitionHandle;
     }
-	White("You use unfriendly Windows version, where VidGetPartitionFriendlyName is denied\n");
+
+	White(L"You use an unfriendly Windows version. Access to VidGetPartitionFriendlyName() function is denied.\n");
 
     return Ret;
 } 
@@ -198,7 +195,7 @@ BOOL Ret;
             //    Ret = TRUE;
             //}
 			//HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle);
-			wprintf(L"DuplicatedHandle - %d\n", (ULONG) DuplicatedHandle);
+			wprintf(L"DuplicatedHandle. Handle -> %p\n", DuplicatedHandle);
 			if (HvlckdGetPartitionFriendlyName(PartitionEntry, DuplicatedHandle) == TRUE)
 			{
 				Ret = TRUE;
@@ -228,7 +225,7 @@ GetPartitionInformation(
     ULONG Size;
 
     NTSTATUS NtStatus;
-    SIZE_T BytesRet;
+	ULONG BytesRet;
 
     SIZE_T NumberOfEntries;
 
@@ -269,7 +266,7 @@ GetPartitionInformation(
                                         &BytesRet);
     if (NtStatus != STATUS_SUCCESS)
     {
-        wprintf(L"NtQuerySystemInformation(SystemHandleInformation) Error = %x (%x vs %I64Xx)\n",
+        wprintf(L"NtQuerySystemInformation(SystemHandleInformation) Error = %x (0x%x instead of 0x%x)\n",
                 NtStatus, Size, BytesRet);
         goto Exit;
     }
@@ -323,10 +320,10 @@ Exit:
 PHVDD_PARTITION
 GetPartitions(PULONG PartitionTableCount)
 {
-HANDLE SnapshotHandle = NULL;
-PROCESSENTRY32 ProcessEntry;
+	HANDLE SnapshotHandle = NULL;
+	PROCESSENTRY32W ProcessEntry;
 
-BOOL Ret;
+	BOOL Ret;
 
     Ret = FALSE;
 
@@ -351,14 +348,14 @@ BOOL Ret;
 
     ProcessEntry.dwSize = sizeof(PROCESSENTRY32);
 
-    if (!Process32First(SnapshotHandle, &ProcessEntry))
+    if (!Process32FirstW(SnapshotHandle, &ProcessEntry))
     {
         wprintf(L"EnumPartitions - Process32First(Error = %d)\n",
                 GetLastError());
         goto Exit;
     }
 
-    while (Process32Next(SnapshotHandle,&ProcessEntry) != 0 )
+    while (Process32NextW(SnapshotHandle,&ProcessEntry) != 0 )
     {
         if(_wcsicmp(ProcessEntry.szExeFile, L"vmwp.exe") == 0)
         {

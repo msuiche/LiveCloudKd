@@ -57,7 +57,7 @@ DumpVirtualMachine(PHVDD_PARTITION PartitionEntry,
          Index < (ULONG)PageCountTotal;
          Index += (BLOCK_SIZE / PAGE_SIZE))
     {
-        printf(L"Index = 0x%x\n", Index);
+        wprintf(L"Index = 0x%x\n", Index);
         if (VidReadMemoryBlockPageRange(PartitionEntry->PartitionHandle,
                                         MemoryBlockHandle,
                                         Index,
@@ -225,7 +225,7 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
 
     HANDLE HvddFile = NULL;
 
-    MB_HANDLE MemoryBlockHandle;
+    MB_HANDLE MemoryBlockHandle; // deprecated.
     ULONG64 PageCountTotal;
 
     PVOID Buffer;
@@ -250,11 +250,11 @@ DumpLiveVirtualMachine(PHVDD_PARTITION PartitionEntry)
     Buffer = malloc(BLOCK_SIZE);
     if (Buffer == NULL) goto Exit;
 
-    GetWindowsDirectory(WindowsDir, sizeof(WindowsDir) / sizeof(WindowsDir[0]));
+    GetWindowsDirectoryW(WindowsDir, sizeof(WindowsDir) / sizeof(WindowsDir[0]));
     swprintf_s(CrashFilePath, sizeof(CrashFilePath) / sizeof(CrashFilePath[0]),
                L"%s\\hvdd.dmp", WindowsDir);
 
-    HvddFile = CreateFile(CrashFilePath,
+    HvddFile = CreateFileW(CrashFilePath,
                           GENERIC_WRITE,
                           FILE_SHARE_READ,
                           NULL, CREATE_ALWAYS,
@@ -342,7 +342,7 @@ Exit:
 
     if (HvddFile != INVALID_HANDLE_VALUE) CloseHandle(HvddFile);
 
-    DeleteFile(CrashFilePath);
+    DeleteFileW(CrashFilePath);
 
     return TRUE;
 }

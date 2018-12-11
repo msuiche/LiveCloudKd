@@ -26,7 +26,7 @@ BOOL
 CreateDestinationFile(LPCWSTR Filename,
                       PHANDLE Handle)
 {
-    *Handle = CreateFile(Filename,
+    *Handle = CreateFileW(Filename,
                          GENERIC_WRITE,
                          0,
                          NULL,

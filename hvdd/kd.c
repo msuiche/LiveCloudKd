@@ -47,7 +47,7 @@ UINT64 GetGuestReg(PHVDD_PARTITION PartitionEntry)
 	printf("GUEST HvX64RegisterIdtr.High64 0x%llx\n", RegisterValue.Reg128.High64);
 	printf("GUEST HvX64RegisterIdtr.Low64 0x%llx\n", RegisterValue.Reg128.Low64);
 
-	lPage = (PULONG)malloc(PAGE_SIZE);
+	lPage = (PULONG64)malloc(PAGE_SIZE);
 	if (lPage == NULL) {
 		printf("GuestReg malloc is false\n");
 		return FALSE;
@@ -511,7 +511,7 @@ TryAgainWith3GB:
 				
 			//printf("KdFindDbgDataBlock.Base 0x%p\n", Base);
 			
-			if (Index & 0xFF == 0) {
+			if ((Index & 0xFF) == 0) {
 				printf("    index = 0x%d\n", Index);
 				printf("    Scan base = 0x%llx\n", Base);
 			}
@@ -657,7 +657,7 @@ Exit:
 BOOL
 LaunchKd(LPCWSTR DumpFile)
 {
-STARTUPINFO si;
+STARTUPINFOW si;
 PROCESS_INFORMATION pi;
 
 WCHAR CommandLine[MAX_PATH * 3];
@@ -706,7 +706,7 @@ HANDLE ThreadHandle[0xFFFF];
     //    &pi)
     //) 
 
-	if (!CreateProcess(NULL,
+	if (!CreateProcessW(NULL,
 	    CommandLine,
 	    NULL,
 	    NULL,
@@ -729,7 +729,7 @@ HANDLE ThreadHandle[0xFFFF];
         return FALSE;
     }
 
-    SetConsoleTitle(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
+    SetConsoleTitleW(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
     // wprintf(L"Main Thread: pi.dwThreadId = %d\n", pi.dwThreadId);
     ThreadHandle[pi.dwThreadId] = pi.hThread;
 

@@ -130,10 +130,10 @@ USHORT Color;
           L"      This surprisingly still works after 6 years, 100%% User-Land - Send comments to support@comae.io\n"
           L"      All rights reserved.\n\n");
 
-    SetConsoleTitle(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
+    SetConsoleTitleW(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
 
 	//GetImportFuntions();
-	printf("size of FUNCTION_TABLE is %x\n", (sizeof(FUNCTION_TABLE)));
+	printf("size of FUNCTION_TABLE is %zx\n", sizeof(FUNCTION_TABLE));
 	
 	ParseArguments(argc, argv);
 
