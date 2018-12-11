@@ -1,11 +1,17 @@
 #include "driver.h"
 
+#define GET_MINOR_VERSION() (USHORT)(*NtBuildNumber & 0xFFFF)
+
 ULONG
 GetFsContextOffset(
     VOID
 )
 {
     // 0x78 - for Windows 10.1803. For Windows 2016 - 0x70 (but still works vid.dll). RtlGetVersion
+
+#if 0
+    if (GET_MINOR_VERSION() >= 1803) return 0x78;
+#endif
 
     // TODO: Use BuildNumber
 
