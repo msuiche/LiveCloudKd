@@ -1,6 +1,6 @@
 Since Microsoft is now (May 2018) providing [symbols](https://blogs.technet.microsoft.com/srd/2018/05/03/hyper-v-debugging-symbols-are-publicly-available/) for debugging Hyper-V, and encouraging security researchers to [look at](https://blogs.technet.microsoft.com/srd/2018/12/10/first-steps-in-hyper-v-research/) Hyper-V. I figured it would be a good timing to open-source a utility for Hyper-V I wrote back in 2010.
 
-#LiveCloudKd
+# LiveCloudKd
 ## Introduction
 LiveCloudKd was the first utility to focus on Virtual Machine introspection for memory forensics purposes, it was released in 2010 after some initial research on Hyper-V v1.
 
@@ -17,7 +17,7 @@ Each Virtual Machine has one vmwp.exe, which has one Partition Handle (PT_HANDLE
 
 ### Quest to PT_HANDLE
 First, we needed to retrive the original Partition Handle (PT_HANDLE) returned by VidCreatePartition() to the vmwp.exe. Unfortunately, no API was present to retrieve existing partition handles. But since the process was not isolated we could just look for handles within each `vmwp.exe` process with an object name starting with `\\Device\\000000`, and then we could validate each of the retrieved handles with a basic API call such as `VidGetPartitionFriendlyName()`.
-More details are available in `[partition.c!IsPartitionHandle()]( https://github.com/comaeio/LiveCloudKd/blob/master/hvdd/partition.c#L141)`:
+More details are available in `[partition.c!IsPartitionHandle()](https://github.com/comaeio/LiveCloudKd/blob/master/hvdd/partition.c#L141)`:
 
 ### Quest to MB_HANDLE[]
 Secondly, once we recovered the valid Partition Handles corresponding to each Hyper-V Virtual Machine, we need to retrieve its Memory Block's Handles. This is where I brute-forced the memory address space of each `vmwp.exe` to collect all the kernel pointers before verifying if they were valid Memory Block handles or not. More details can be found in [`memoryblock.c!GetMemoryBlocks()`](https://github.com/comaeio/LiveCloudKd/blob/master/hvdd/memoryblock.c#L106). 
