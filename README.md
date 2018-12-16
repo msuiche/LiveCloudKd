@@ -37,3 +37,6 @@ After discussing with [@gerhart_x](https://twitter.com/gerhart_x) on why LiveClo
 
 Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the existence of the Windows Hypervisor Platform API (WHVP) where I noticed the presence of [ReadGuestPhysicalAddress()](https://docs.microsoft.com/en-us/virtualization/api/vm-dump-provider/funcs/readguestphysicaladdress) API which is now publicly available as of Windows 1803 (10.0.17134.48).
 [Simpleator](https://github.com/ionescu007/Simpleator) is a great example of an application leveraging those APIs if you want to learn more about it.
+
+## Contributors
+- [@gerhart_x](https://twitter.com/gerhart_x)
