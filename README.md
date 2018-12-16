@@ -35,7 +35,7 @@ Last but not least, in order to create a `livekd` style image on the fly I would
 ## LiveCloudKd (2018)
 After discussing with [@gerhart_x](https://twitter.com/gerhart_x) on why LiveCloudKd was not working anymore on the current version of Hyper-V, [@gerhart_x](https://twitter.com/gerhart_x) offered to work on an expiremental feature to revive LiveCloudKd again. Unfortunately, this requires a kernel driver.
 
-Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the existence of the Windows Hypervisor Platform API (WHVP) where I noticed the presence of [ReadGuestPhysicalAddress()](https://docs.microsoft.com/en-us/virtualization/api/vm-dump-provider/funcs/readguestphysicaladdress) API which is now publicly available as of Windows 1803 (10.0.17134.48).
+Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the existence of the Windows Hypervisor Platform API (WHVP) where I noticed the presence of the [ReadGuestPhysicalAddress()](https://docs.microsoft.com/en-us/virtualization/api/vm-dump-provider/funcs/readguestphysicaladdress) API which is now publicly available as of Windows 1803 (10.0.17134.48). This may be a good lead to create a current lean version of LiveCloudKd and re-enable on the fly memory forensics for Hyper-V Virtual Machines.
 [Simpleator](https://github.com/ionescu007/Simpleator) is a great example of an application leveraging those APIs if you want to learn more about it.
 
 ## Contributors
