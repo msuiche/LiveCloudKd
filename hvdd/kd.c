@@ -740,7 +740,7 @@ LaunchKd(
         return FALSE;
     }
 
-    SetConsoleTitleW(L"LiveCloudKd - Matthieu Suiche (msuiche) from MoonSols SARL - www.moonsols.com");
+    SetConsoleTitleW(L"LiveCloudKd");
     // wprintf(L"Main Thread: pi.dwThreadId = %d\n", pi.dwThreadId);
     ThreadHandle[pi.dwThreadId] = pi.hThread;
 
