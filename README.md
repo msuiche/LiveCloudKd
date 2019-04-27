@@ -40,3 +40,17 @@ Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the ex
 
 ## Contributors
 - [@gerhart_x](https://twitter.com/gerhart_x)
+
+##LiveCloudKd (2019). Still beta stage!!
+
+Add new methods for access guest Hyper-V VM Memory: ReadInterfaceWinHv (uses Hyper-V hypercall for reading. Slow, but robust method) and ReadInterfaceHvmmDrvInternal (read data directly in kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading memthod is ReadInterfaceHvmmDrvInternal.
+ReadInterfaceHvmmDrvInternal was tested in Windows Server 2019 (march 2019 updates), Windows 10 x64 1803, 1809, 18362
+Tested on Full VM, Windows Defender Application Guard and Windows Sanbox from 18362
+
+For launch:
+1. hvmm.sys driver is not signed, there for start host os with TESTSIGN option (Bcdedit /set TESTSIGNING ON)
+2. Place LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 and WDK 1903)
+3. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe)
+4. Choose virtual machine (it can be Full Vm or Hyper-V container) for attaching
+	
+
