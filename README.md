@@ -41,7 +41,7 @@ Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the ex
 ## Contributors
 - [@gerhart_x](https://twitter.com/gerhart_x)
 
-##LiveCloudKd (2019). Still beta stage!!
+## LiveCloudKd (2019). Still beta stage!!
 
 Add new methods for access guest Hyper-V VM Memory: ReadInterfaceWinHv (uses Hyper-V hypercall for reading. Slow, but robust method) and ReadInterfaceHvmmDrvInternal (read data directly in kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading memthod is ReadInterfaceHvmmDrvInternal.
 ReadInterfaceHvmmDrvInternal was tested in Windows Server 2019 (march 2019 updates), Windows 10 x64 1803, 1809, 18362
