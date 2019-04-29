@@ -1,0 +1,16 @@
+﻿*.ilk
+*.pdb
+*.exp
+*.iobj
+*.ipdb
+*.lastcodeanalysissucceeded
+/.vs
+leechrpc_h.h
+leechrpc_c.c
+leechrpc_s.c
+/files/lib
+/files/temp
+/files/leechcore.dll
+/files/leechcore.lib
+/files/leechcore.h
+/files/leechsvc.exe
