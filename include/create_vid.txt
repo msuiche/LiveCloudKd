@@ -1,3 +1,0 @@
-rem dumpbin /exports vid_10_17666.dll > vid.def
-lib.exe /def:vid.def /OUT:vid.lib /machine:x64
-lib.exe /def:ntdll.def /OUT:ntdll.lib /machine:x64  
