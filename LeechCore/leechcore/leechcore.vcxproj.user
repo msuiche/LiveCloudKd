@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>C:\Distr\Test\MemProcFS-BH\memprocfs.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-vv -device hvvm</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>C:\Distr\Test\MemProcFS</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommand>C:\Distr\Test\MemProcFS-BH\memprocfs.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerCommandArguments>-vv -device hvvm</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerWorkingDirectory>C:\Distr\Test\MemProcFS-BH</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerServerName>192.168.174.131</RemoteDebuggerServerName>
+    <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
+    <DeploymentDirectory>C:\Distr\Test\MemProcFS-BH</DeploymentDirectory>
+    <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>
