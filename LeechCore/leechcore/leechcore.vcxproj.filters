@@ -60,10 +60,16 @@
     <ClCompile Include="util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="device_hvvm.c">
+    <ClCompile Include="leechrpcshared.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hvvm.c">
+    <ClCompile Include="device_hvmm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hvmm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="leechcore_devices.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -119,10 +125,7 @@
     <ClInclude Include="version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="device_hvvm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\LiveCloudKdSdk\public\LiveCloudKdSdkPublic.h">
+    <ClInclude Include="device_hvmm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
