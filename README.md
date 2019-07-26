@@ -48,7 +48,7 @@ ReadInterfaceHvmmDrvInternal was tested in Windows Server 2019 (march 2019 updat
 Tested on Full VM, Windows Defender Application Guard and Windows Sanbox from 18362
 
 For launch:
-1. hvmm.sys driver is not signed, there for start host os with TESTSIGN option (Bcdedit /set TESTSIGNING ON)
+1. hvmm.sys driver is not signed, therefor start host OS with TESTSIGNING option (Bcdedit /set TESTSIGNING ON)
 2. Place LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 and WDK 1903)
 3. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe)
 4. Choose virtual machine (it can be Full Vm or Hyper-V container) for attaching
