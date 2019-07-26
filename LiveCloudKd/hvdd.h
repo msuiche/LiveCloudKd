@@ -98,19 +98,19 @@ MmWriteVirtualAddress(
 //
 BOOLEAN
 DumpVirtualMachine(
-    PHVDD_PARTITION PartitionEntry,
-    LPCWSTR DestinationFile
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ LPCWSTR DestinationFile
 );
 
 BOOLEAN
 DumpLiveVirtualMachine(
-    PHVDD_PARTITION PartitionEntry
+	_In_ PHVDD_PARTITION PartitionEntry
 );
 
 BOOLEAN
 DumpCrashVirtualMachine(
-    PHVDD_PARTITION PartitionEntry,
-    LPCWSTR DestinationFile
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ LPCWSTR DestinationFile
 );
 
 //
@@ -137,6 +137,16 @@ WriteFileSynchronous(
 BOOL
 LaunchKd(
 	LPCWSTR DumpFile,
+	PHVDD_PARTITION PartitionEntry
+);
+
+BOOLEAN
+LaunchWinDbg(
+	PHVDD_PARTITION PartitionEntry
+);
+
+BOOLEAN
+LaunchWinDbgX(
 	PHVDD_PARTITION PartitionEntry
 );
 
@@ -201,3 +211,5 @@ HookKd(
 );
 
 extern BOOLEAN UseWinDbg;
+extern BOOLEAN UseWinDbgX;
+extern BOOLEAN UseEXDi;

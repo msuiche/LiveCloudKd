@@ -32,6 +32,145 @@ Revision History:
 
 #include "hvdd.h"
 
+BOOLEAN
+CheckEXDiRegistration()
+{
+	HKEY hKey;
+	LONG nResult;
+	BOOL bExist = FALSE;
+
+
+	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, L"CLSID\\{53838F70-0936-44A9-AB4E-ABB568401508}\\InprocServer32", 0, KEY_READ | KEY_WOW64_64KEY, &hKey) == ERROR_SUCCESS)
+	{
+		DWORD dwType;
+		nResult = RegQueryValueEx(hKey, NULL, NULL, &dwType, NULL, NULL);
+		if (nResult == ERROR_SUCCESS)
+			bExist = TRUE;
+		RegCloseKey(hKey);
+	}
+	return bExist;
+}
+
+BOOLEAN
+EXDiRegistration()
+{
+	if (CheckEXDiRegistration() == FALSE) {
+		wprintf(L"It looks like EXDi COM extention is not regestered. Registering \n");
+		ShellExecute(NULL, NULL, L"C:\\WINDOWS\\system32\\regsvr32.exe", L"/s ExdiKdSample.dll", NULL, SW_HIDE);
+		if (CheckEXDiRegistration() == TRUE) {
+			wprintf(L"Registration was sucessfully completed. \n");
+		}
+		else {
+			wprintf(L"Some problems with registration. Try register extention manually using \"regsvr32.exe ExdiKdSample.dll\" command\n");
+		}
+	}
+	return TRUE;
+}
+
+BOOLEAN
+LaunchWinDbgX(PHVDD_PARTITION PartitionEntry)
+{
+	STARTUPINFO si = {0};
+	PROCESS_INFORMATION pi = {0};
+
+	WCHAR CommandLine[MAX_PATH * 3];
+	WCHAR ApplicationName[MAX_PATH * 3];
+
+	INT64 KdVersionBlock = PartitionEntry->KiExcaliburData.KdVersionBlock;
+
+	lstrcatW(ApplicationName, L"WinDBGX.exe");
+	swprintf_s(CommandLine, sizeof(CommandLine) / sizeof(CommandLine[0]),
+		L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld", KdVersionBlock);
+
+	wprintf(L"WinDBGX cmd launching with EXDi parameter doesn't work still. Until it will be fixed, paste text from next line to WinDBGX kernel debugging EXDi tab:\nCLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld \n", KdVersionBlock);
+
+	EXDiRegistration();
+
+	if (!CreateProcess(ApplicationName,
+		CommandLine,
+		NULL,
+		NULL,
+		FALSE,
+		0,
+		NULL,
+		NULL,
+		&si,
+		&pi)
+		)
+	{
+		if (GetLastError() == ERROR_FILE_NOT_FOUND)
+		{
+			Red(L"   You must install WinDBG preview from Windows Store.\n");
+		}
+		else
+		{
+			wprintf(L"CreateProcess failed (%d).\n", GetLastError());
+		}
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+BOOLEAN
+LaunchWinDbg(PHVDD_PARTITION PartitionEntry)
+{
+	STARTUPINFO si = { 0 };
+	PROCESS_INFORMATION pi = { 0 };
+
+	WCHAR CommandLine[MAX_PATH * 3];
+	WCHAR ApplicationName[MAX_PATH * 3];
+
+	INT64 KdVersionBlock = PartitionEntry->KiExcaliburData.KdVersionBlock;
+	wprintf(L"%lld \n", KdVersionBlock);
+
+	GetCurrentDirectory(sizeof(ApplicationName)/ sizeof(ApplicationName[0]), ApplicationName);
+
+	//swprintf_s(ApplicationName, sizeof(ApplicationName) / sizeof(ApplicationName[0]), L"\\windbg.exe");
+
+	lstrcatW(ApplicationName, L"\\windbg.exe");
+	swprintf_s(CommandLine, sizeof(CommandLine) / sizeof(CommandLine[0]),
+		L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld", KdVersionBlock);
+
+	EXDiRegistration();
+
+	if (!CreateProcess(ApplicationName,
+		CommandLine,
+		NULL,
+		NULL,
+		FALSE,
+		0,
+		NULL,
+		NULL,
+		&si,
+		&pi)
+		)
+	{
+		if (GetLastError() == ERROR_FILE_NOT_FOUND)
+		{
+			Red(L"   You must put LiveCloudKd.exe in the WinDbg Directory.\n");
+		}
+		else
+		{
+			wprintf(L"CreateProcess failed (%d).\n", GetLastError());
+		}
+		return FALSE;
+	}
+
+
+	//s = malloc(size);
+	//if (s == NULL)
+	//{
+	//	return FALSE;
+	//}
+	//RtlZeroMemory(s, size);
+
+	//swprintf_s(s, size, L"%lld",KdVersionBlock);
+	
+
+	return TRUE;
+}
+
 BOOL
 LaunchKd(LPCWSTR DumpFile, PHVDD_PARTITION PartitionEntry)
 {
@@ -46,6 +185,9 @@ ULONG dwContinueStatus;
 // CONTEXT Context;
 
 HANDLE ThreadHandle[0xFFFF];
+
+HANDLE DuplicatedHandle;
+NTSTATUS NtStatus;
 
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
@@ -104,8 +246,6 @@ HANDLE ThreadHandle[0xFFFF];
 
     while (TRUE)
     {
-        HANDLE DuplicatedHandle;
-        NTSTATUS NtStatus;
 
         WaitForDebugEvent(&DbgEvent, INFINITE);
 
@@ -188,6 +328,7 @@ Exit:
     // Close process and thread handles. 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
+	CloseHandle(DuplicatedHandle);
 
     return TRUE;
 }

@@ -20,7 +20,7 @@ typedef VOID (WINAPI *pSetLastError)(DWORD);
 typedef BOOLEAN(WINAPI *pSdkHvmmInternalReadMemory)(HANDLE, MB_PAGE_INDEX, UINT64, PVOID);
 typedef BOOLEAN (WINAPI *pSdkHvmmHvReadGPA)(ULONG64, MB_PAGE_INDEX, UINT64, PVOID);
 typedef BOOLEAN(WINAPI *pSdkHvmmGetMemoryBlockInfoFromGPA)(PVOID);
-typedef BOOLEAN(WINAPI *pSdkHvmmReadVmMemory)(PVOID, MB_PAGE_INDEX, UINT64, PVOID, READ_MEMORY_METHOD);
+typedef BOOLEAN(WINAPI *pSdkHvmmReadPhysicalMemory)(PVOID, MB_PAGE_INDEX, UINT64, PVOID, READ_MEMORY_METHOD);
 typedef BOOLEAN(WINAPI *pSdkHvmmPatchPsGetCurrentProcess)(UINT64, UINT64);
 typedef BOOLEAN(WINAPI *pSdkHvmmRestorePsGetCurrentProcess)();
 
@@ -48,7 +48,7 @@ typedef struct _FUNCTION_TABLE {
     pVidReadMemoryBlockPageRange _VidReadMemoryBlockPageRange;
     pVidWriteMemoryBlockPageRange _VidWriteMemoryBlockPageRange;
 	pSdkHvmmInternalReadMemory _SdkHvmmInternalReadMemory;
-	pSdkHvmmReadVmMemory _SdkHvmmReadVmMemory;
+	pSdkHvmmReadPhysicalMemory _SdkHvmmReadPhysicalMemory;
     pSdkHvmmHvReadGPA _SdkHvmmHvReadGPA;
     pSdkHvmmGetMemoryBlockInfoFromGPA _SdkHvmmGetMemoryBlockInfoFromGPA;
 	pSdkHvmmPatchPsGetCurrentProcess _SdkHvmmPatchPsGetCurrentProcess;

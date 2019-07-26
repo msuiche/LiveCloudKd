@@ -149,26 +149,26 @@ BOOL Ret;
 			FunctionTable.Header = (PUCHAR)(Buffer + WINDBG_FT_TABLE_PAGE_COUNT * PAGE_SIZE);
 			Status = WriteProcessMemory(ProcessHandle, TABLE_OFFSET, &FunctionTable, sizeof(FUNCTION_TABLE), &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"CREATEFILE_OFFSET: %09llx-%09llx\n", (ULONG64)CREATEFILE_OFFSET, (ULONG64)CREATEFILE_OFFSET + 0x300);
+			 //wprintf(L"CREATEFILE_OFFSET: %09llx-%09llx\n", (ULONG64)CREATEFILE_OFFSET, (ULONG64)CREATEFILE_OFFSET + 0x300);
 			Status = WriteProcessMemory(ProcessHandle, CREATEFILE_OFFSET, &MyCreateFile, 0x300, &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"CREATEFILEMAPPINGA_OFFSET: %08llx-%08llx\n", (ULONG64)CREATEFILEMAPPINGA_OFFSET, (ULONG64)CREATEFILEMAPPINGA_OFFSET + 0x100);
+			 //wprintf(L"CREATEFILEMAPPINGA_OFFSET: %08llx-%08llx\n", (ULONG64)CREATEFILEMAPPINGA_OFFSET, (ULONG64)CREATEFILEMAPPINGA_OFFSET + 0x100);
 			Status = WriteProcessMemory(ProcessHandle, CREATEFILEMAPPINGA_OFFSET, &MyCreateFileMappingA, 0x100, &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"CREATEFILEMAPPINGW_OFFSET: %08llx-%08llx\n", (ULONG64)CREATEFILEMAPPINGW_OFFSET, (ULONG64)CREATEFILEMAPPINGW_OFFSET + 0x100);
+			 //wprintf(L"CREATEFILEMAPPINGW_OFFSET: %08llx-%08llx\n", (ULONG64)CREATEFILEMAPPINGW_OFFSET, (ULONG64)CREATEFILEMAPPINGW_OFFSET + 0x100);
 			Status = WriteProcessMemory(ProcessHandle, CREATEFILEMAPPINGW_OFFSET, &MyCreateFileMappingW, 0x100, &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"MAPVIEWOFFILE_OFFSET: %08llx-%08llx\n", (ULONG64)MAPVIEWOFFILE_OFFSET, (ULONG64)MAPVIEWOFFILE_OFFSET + 0x1B00);
+			 //wprintf(L"MAPVIEWOFFILE_OFFSET: %08llx-%08llx\n", (ULONG64)MAPVIEWOFFILE_OFFSET, (ULONG64)MAPVIEWOFFILE_OFFSET + 0x1B00);
 			Status = WriteProcessMemory(ProcessHandle, MAPVIEWOFFILE_OFFSET, &MyMapViewOfFile, 0x1B00, &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"UNMAPVIEWOFFILE_OFFSET: %08llx-%08llx\n", (ULONG64)UNMAPVIEWOFFILE_OFFSET, (ULONG64)UNMAPVIEWOFFILE_OFFSET + 0x100);
+			 //wprintf(L"UNMAPVIEWOFFILE_OFFSET: %08llx-%08llx\n", (ULONG64)UNMAPVIEWOFFILE_OFFSET, (ULONG64)UNMAPVIEWOFFILE_OFFSET + 0x100);
 			Status = WriteProcessMemory(ProcessHandle, UNMAPVIEWOFFILE_OFFSET, &MyUnmapViewOfFile, 0x100, &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"GETFILESIZE_OFFSET: %08llx-%08llx\n", (ULONG64)GETFILESIZE_OFFSET, (ULONG64)GETFILESIZE_OFFSET + 0x100);
+			// wprintf(L"GETFILESIZE_OFFSET: %08llx-%08llx\n", (ULONG64)GETFILESIZE_OFFSET, (ULONG64)GETFILESIZE_OFFSET + 0x100);
 			Status = WriteProcessMemory(ProcessHandle, GETFILESIZE_OFFSET, &MyGetFileSize, 0x100, &size);
 			if (Status != TRUE) goto Exit;
-			 wprintf(L"VIRTUALPROTECT_OFFSET: %08llx-%08llx\n", (ULONG64)VIRTUALPROTECT_OFFSET, (ULONG64)VIRTUALPROTECT_OFFSET + 0x900);
-			Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, &MyVirtualProtect, 0x900, &size);
+			 //wprintf(L"VIRTUALPROTECT_OFFSET: %08llx-%08llx\n", (ULONG64)VIRTUALPROTECT_OFFSET, (ULONG64)VIRTUALPROTECT_OFFSET + 0x900);
+			Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, &MyVirtualProtect, 0xD00, &size);
 			// Status = WriteProcessMemory(ProcessHandle, VIRTUALPROTECT_OFFSET, "\xCC", 1, &size);
 			if (Status != TRUE) goto Exit;
 
@@ -224,7 +224,7 @@ BOOL Ret;
                 goto Exit;
             }
 			
-			if (g_MemoryInterfaceType == ReadInterfaceVidDll) {
+			if (g_MemoryReadInterfaceType == ReadInterfaceVidDll) {
             // VirtualProtectEx(ProcessHandle, ModBase, me32.modBaseSize, Rights, &Rights);
 				//PartitionEntry->ChildPid = ProcessId;
 				if (!SdkHvmmRestorePsGetCurrentProcess()) {
@@ -392,7 +392,8 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
         if ((Offset.QuadPart == 0ULL) && (dwNumberOfBytesToMap >= FT->HeaderSize)) //FT->HeaderSize = sizeof(DUMP_HEADER64)
         {
-            for (i = Index; i < FT->HeaderSize; i += 1) Buffer[i] = FT->Header[i];
+            for (i = Index; i < FT->HeaderSize; i += 1) 
+				Buffer[i] = FT->Header[i];
             Index += FT->HeaderSize;
         }
 
@@ -483,57 +484,23 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
 
         Res = FT->_SdkHvmmGetMemoryBlockInfoFromGPA(&BlockIndexInfo);
 
-        //if (BlockIndexInfo.MemoryBlockPageIndex != 0) {
-        //    Position = BlockIndexInfo.MemoryBlockPageIndex;
-       // }
-
-  /*      Res = FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
-                BlockIndexInfo.MbHandle,
-                BlockIndexInfo.MemoryBlockPageIndex,
-                NumberOfPages,
-                Buffer + Index,
-                SizeToMap);*/
-
 		FT->_SdkHvmmPatchPsGetCurrentProcess(PartitionEntryLocal->WorkerPid, PartitionEntryLocal->CurrentProcess);
-         for (i = 0; i < 0x500; i++)
-        //for (i = 0x500; i >=0; i--)
-         {
-             if (FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
-                 (MB_HANDLE)i,
-                 BlockIndexInfo.MemoryBlockPageIndex,
-                 NumberOfPages,
-                 Buffer + Index,
-                 SizeToMap))
 
-             {
-                 Res = TRUE;
-                 break;
-             }
-         }
+		FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
+			BlockIndexInfo.MbHandle,
+			BlockIndexInfo.MemoryBlockPageIndex,
+			NumberOfPages,
+			Buffer + Index,
+			SizeToMap);
 		 FT->_SdkHvmmRestorePsGetCurrentProcess();
 	} else
 	{
 		//if (FT->_SdkHvmmInternalReadMemory(FT->PartitionHandle, Position*PAGE_SIZE, SizeToMap, Buffer + Index))
-		if (FT->_SdkHvmmReadVmMemory(PartitionEntryLocal, Position*PAGE_SIZE, SizeToMap, Buffer + Index, FT->ReadMemoryMethod))
+		if (FT->_SdkHvmmReadPhysicalMemory(PartitionEntryLocal, Position*PAGE_SIZE, SizeToMap, Buffer + Index, FT->ReadMemoryMethod))
 		{
 			Res = TRUE;
 		}
 	}
-
-            // repeat of 0x500 cycle was wrong
-
-		 //if (FT->_SdkHvmmInternalReadMemory(FT->PartitionHandle, Position*PAGE_SIZE, SizeToMap, Buffer + Index, SizeToMap))
-		 //{
-			// Res = TRUE;
-		 //}
-
-        //if (Res == FALSE){
-        // Res = FT->_SdkHvmmHvReadGPA(FT->PartitionId,
-        //        Position*PAGE_SIZE,
-        //        SizeToMap,
-        //        Buffer + Index,
-        //        SizeToMap);
-        //}
 
         //Position = (Offset.QuadPart + Index - FT->HeaderSize);
         //Position /= PAGE_SIZE;
@@ -560,13 +527,41 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
                 }
                 else
                 {
-                    Context64 = (PX64_CONTEXT)C;
+					//lol = (ULONG)Position;
+					////lol = (ULONG)dwFileOffsetLow;
+					//Str1[7] = Alpha[(UCHAR)(lol & 0xF)];
+					//Str1[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
+					//Str1[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
+					//Str1[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
+					//Str1[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
+					//Str1[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
+					//Str1[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
+					//Str1[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
+					//Str1[8] = L'\0';
+
+					////lol = (ULONG)Buffer; // messagebox dialogbox title
+					////lol = (ULONG)(FT->PartitionHandle);
+					//lol = (ULONG)FT->HeaderSize;
+					//Str2[7] = Alpha[(UCHAR)(lol & 0xF)];
+					//Str2[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
+					//Str2[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
+					//Str2[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
+					//Str2[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
+					//Str2[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
+					//Str2[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
+					//Str2[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
+					//Str2[8] = L'\0';
+
+					//FT->_MessageBoxW(0, Str1, Str2, 0);
+					
+					Context64 = (PX64_CONTEXT)C;
                     Context64->SegCs = KGDT64_R0_CODE;
                     Context64->SegDs = (KGDT64_R3_DATA | RPL_MASK);
                     Context64->SegEs = (KGDT64_R3_DATA | RPL_MASK);
                     Context64->SegFs = (KGDT64_R3_CMTEB | RPL_MASK);
                     Context64->SegGs = 0;
-                    Context64->SegSs = KGDT64_R0_DATA;
+					Context64->SegGs = (KGDT64_R3_DATA | RPL_MASK);
+                    //Context64->SegSs = KGDT64_R0_DATA;
                 }
             }
         }// end if Res == TRUE
@@ -611,93 +606,6 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
                      FT->_MessageBoxW(0, Str1, Str2, 0);
         }
         
-   //     if (FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
-			//								(MB_HANDLE)1,
-   //                                          Position,
-   //                                          NumberOfPages,
-   //                                          Buffer + Index,
-   //                                          SizeToMap))
-   //     {
-			//
-			//if ((FT->ContextPageIndex >= Position) &&
-   //             ((FT->ContextPageIndex < (Position + NumberOfPages)))) // work with KiProcessorBlock context page
-   //         {
-   //             C = Buffer + Index + ((FT->ContextPageIndex - (ULONG)Position)  * PAGE_SIZE);
-   //             C += FT->ContextOffsetLow & (PAGE_SIZE - 1);
-
-   //             if (FT->MachineType == MACHINE_X86)
-   //             {
-   //                 Context32 = (PX86_CONTEXT)C;
-   //                 Context32->SegCs = KGDT_R0_CODE;
-   //                 Context32->SegDs = (KGDT_R3_DATA | RPL_MASK);
-   //                 Context32->SegEs = (KGDT_R3_DATA | RPL_MASK);
-   //                 Context32->SegFs = KGDT_R0_PCR;
-   //                 Context32->SegGs = 0;
-   //                 Context32->SegSs = KGDT_R0_DATA;
-   //             }
-   //             else
-   //             {
-   //                 Context64 = (PX64_CONTEXT)C;
-   //                 Context64->SegCs = KGDT64_R0_CODE;
-   //                 Context64->SegDs = (KGDT64_R3_DATA | RPL_MASK);
-   //                 Context64->SegEs = (KGDT64_R3_DATA | RPL_MASK);
-   //                 Context64->SegFs = (KGDT64_R3_CMTEB | RPL_MASK);
-   //                 //Context64->SegFs = 0x53;
-   //                 Context64->SegGs = 0;
-   //                 //Context64->SegGs = 0x2b;
-   //                 Context64->SegSs = KGDT64_R0_DATA;
-   //                 //Context64->Rax = 0xAAAAAAAA;
-   //             }
-   //         }
-   //     }
-   //     else 
-   //     {
-
-
-   //         //Position = Position & 0xFFFF;
-   //         if (FT->_VidReadMemoryBlockPageRange(FT->PartitionHandle,
-   //             (MB_HANDLE)2,
-   //             (Position & 0xFFFF),
-   //             NumberOfPages,
-   //             Buffer + Index,
-   //             SizeToMap))
-   //         {
-
-   //             if ((FT->ContextPageIndex >= Position) &&
-   //                 ((FT->ContextPageIndex < (Position + NumberOfPages)))) // work with KiProcessorBlock context page
-   //             {
-   //                 C = Buffer + Index + ((FT->ContextPageIndex - (ULONG)Position)  * PAGE_SIZE);
-   //                 C += FT->ContextOffsetLow & (PAGE_SIZE - 1);
-
-   //                 if (FT->MachineType == MACHINE_X86)
-   //                 {
-   //                     Context32 = (PX86_CONTEXT)C;
-   //                     Context32->SegCs = KGDT_R0_CODE;
-   //                     Context32->SegDs = (KGDT_R3_DATA | RPL_MASK);
-   //                     Context32->SegEs = (KGDT_R3_DATA | RPL_MASK);
-   //                     Context32->SegFs = KGDT_R0_PCR;
-   //                     Context32->SegGs = 0;
-   //                     Context32->SegSs = KGDT_R0_DATA;
-   //                 }
-   //                 else
-   //                 {
-   //                     Context64 = (PX64_CONTEXT)C;
-   //                     Context64->SegCs = KGDT64_R0_CODE;
-   //                     Context64->SegDs = (KGDT64_R3_DATA | RPL_MASK);
-   //                     Context64->SegEs = (KGDT64_R3_DATA | RPL_MASK);
-   //                     Context64->SegFs = (KGDT64_R3_CMTEB | RPL_MASK);
-   //                     //Context64->SegFs = 0x53;
-   //                     Context64->SegGs = 0;
-   //                     //Context64->SegGs = 0x2b;
-   //                     Context64->SegSs = KGDT64_R0_DATA;
-   //                     //Context64->Rax = 0xAAAAAAAA;
-   //                 }
-   //             }
-   //         }
-   //     }
-
-        //KDBGPa.QuadPart = FT->KdDebuggerDataBlockPa.QuadPart & 0xFFFFFFFFFFFF0000ULL;
-
 		KDBGPa.QuadPart = (FT->KdDebuggerDataBlockPa.QuadPart+0x2000) & 0xFFFFFFFFFFFF0000ULL;
 
         j = FT->KdDebuggerDataBlockPa.LowPart & 0xFFFF; // rewrite for dwReadDataByte size
@@ -729,7 +637,7 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
             {
 				if (j >= 0xE000) 
 				{
-					Buffer[i + j - 0xE000] = FT->KdDebuggerDataBlockBlock[i]; // warning!! 0x2000 is HARDCODE CONSTANT. Eq Index
+					Buffer[i + j - 0xE000] = FT->KdDebuggerDataBlockBlock[i]; // warning!! 0x2000 is HARDCODE CONSTANT. Eq Index. 0x2000 looks like sizeof DUMP header
 				}
 				else 
 				{
@@ -883,8 +791,10 @@ PUCHAR Page, Source;
 BOOL Status;
 
 #if 0
+ULONG64 uAddress;
 PUCHAR x;
 WCHAR Str1[9];
+WCHAR Str2[9];
 WCHAR Alpha[0x11];
 ULONG lol;
 #endif
@@ -955,47 +865,6 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
     Status = FALSE;
     Page = NULL;
 
-#if 0
-    //FT->_MessageBoxW(0, 0, 0, 0);
-
-    Alpha[0] = L'0';
-    Alpha[1] = L'1';
-    Alpha[2] = L'2';
-    Alpha[3] = L'3';
-    Alpha[4] = L'4';
-    Alpha[5] = L'5';
-    Alpha[6] = L'6';
-    Alpha[7] = L'7';
-    Alpha[8] = L'8';
-    Alpha[9] = L'9';
-    Alpha[0xA] = L'a';
-    Alpha[0xB] = L'b';
-    Alpha[0xC] = L'c';
-    Alpha[0xD] = L'd';
-    Alpha[0xE] = L'e';
-    Alpha[0xF] = L'f';
-    Alpha[0x10] = L'\0';
-
-    x = (PUCHAR)lpAddress;
-    x[0x10] = 0x41;
-
-    lol = (ULONG)RegEsp;
-    Str1[7] = Alpha[(UCHAR)(lol & 0xF)];
-    Str1[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
-    Str1[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
-    Str1[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
-    Str1[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
-    Str1[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
-    Str1[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
-    Str1[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
-    Str1[8] = L'\0';
-
-    //s = RegEsp[3];
-    //FT->_MessageBoxA(0, (PUCHAR)(RegEsp[3]), (PUCHAR)RegEsp[3], 0);
-    FT->_MessageBoxW(0, Str1, Str1, 0);
-
-#endif
-
     if (RegEsp[4] != dwSize)
     {
         return FT->_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
@@ -1007,7 +876,61 @@ FT = (PFUNCTION_TABLE)TABLE_OFFSET;
             ((PUCHAR)lpAddress < ((PUCHAR)FT->MapFile[i].Va + FT->MapFile[i].Size)) &&
             (((PUCHAR)lpAddress + dwSize) < ((PUCHAR)FT->MapFile[i].Va + FT->MapFile[i].Size)))
         {
-            Offset = (ULONG64)((PUCHAR)lpAddress - (ULONG64)FT->MapFile[i].Va);
+            
+#if 0
+			//FT->_MessageBoxW(0, 0, 0, 0);
+
+			Alpha[0] = L'0';
+			Alpha[1] = L'1';
+			Alpha[2] = L'2';
+			Alpha[3] = L'3';
+			Alpha[4] = L'4';
+			Alpha[5] = L'5';
+			Alpha[6] = L'6';
+			Alpha[7] = L'7';
+			Alpha[8] = L'8';
+			Alpha[9] = L'9';
+			Alpha[0xA] = L'a';
+			Alpha[0xB] = L'b';
+			Alpha[0xC] = L'c';
+			Alpha[0xD] = L'd';
+			Alpha[0xE] = L'e';
+			Alpha[0xF] = L'f';
+			Alpha[0x10] = L'\0';
+
+			x = (PUCHAR)lpAddress;
+			x[0x10] = 0x41;
+			uAddress = *(PULONG64)lpAddress;
+
+			lol = (ULONG)uAddress & 0xFFFFFF;
+			Str1[7] = Alpha[(UCHAR)(lol & 0xF)];
+			Str1[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
+			Str1[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
+			Str1[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
+			Str1[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
+			Str1[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
+			Str1[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
+			Str1[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
+			Str1[8] = L'\0';
+
+			lol = (ULONG)(uAddress >> 32);
+			Str2[7] = Alpha[(UCHAR)(lol & 0xF)];
+			Str2[6] = Alpha[(UCHAR)((lol >> 4) & 0xF)];
+			Str2[5] = Alpha[(UCHAR)((lol >> 8) & 0xF)];
+			Str2[4] = Alpha[(UCHAR)((lol >> 12) & 0xF)];
+			Str2[3] = Alpha[(UCHAR)((lol >> 16) & 0xF)];
+			Str2[2] = Alpha[(UCHAR)((lol >> 20) & 0xF)];
+			Str2[1] = Alpha[(UCHAR)((lol >> 24) & 0xF)];
+			Str2[0] = Alpha[(UCHAR)((lol >> 28) & 0xF)];
+			Str2[8] = L'\0';
+
+			//s = RegEsp[3];
+			//FT->_MessageBoxA(0, (PUCHAR)(RegEsp[3]), (PUCHAR)RegEsp[3], 0);
+			FT->_MessageBoxW(0, Str1, Str2, 0);
+
+#endif
+			
+			Offset = (ULONG64)((PUCHAR)lpAddress - (ULONG64)FT->MapFile[i].Va);
 
             Page = (PUCHAR)FT->_VirtualAlloc(0, ROUND_PAGE(dwSize), MEM_COMMIT, PAGE_READWRITE);
 

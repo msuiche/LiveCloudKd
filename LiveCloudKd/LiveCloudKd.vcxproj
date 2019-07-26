@@ -173,9 +173,10 @@
       <MapFileName>
       </MapFileName>
       <MapExports>false</MapExports>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)\LiveCloudKd.exe" "E:\Projects\HyperVDebug\files" /y</Command>
+      <Command>copy "$(OutDir)\LiveCloudKd.exe" $(SolutionDir)files /y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug2016|x64'">
@@ -233,9 +234,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(SolutionDir)files\LiveCloudKdSdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)\LiveCloudKd.exe" "E:\Projects\HyperVDebug\files" /y</Command>
+      <Command>copy "$(OutDir)\LiveCloudKd.exe" $(SolutionDir)files /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>

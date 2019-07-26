@@ -21,8 +21,10 @@ Environment:
 
 Revision History:
 
+	- Arthur Khudyaev (@gerhart_x) - 08-July-2019 - Add injection of vidaux.dll to vmwp.exe
+	- Arthur Khudyaev (@gerhart_x) - 01-June-2019 - Add EXDi (kd, WinDBG, WinDBGX) support
 	- Arthur Khudyaev (@gerhart_x) - 18-Apr-2019 - Add additional methods (using Microsoft winhv.sys and own hvmm.sys driver) for reading guest memory
-	- Arthur Khudyaev (@gerhart_x) - 20-Feb-2019 - Migrate parto of code to LiveCloudKd plugin
+	- Arthur Khudyaev (@gerhart_x) - 20-Feb-2019 - Migrate part of code to LiveCloudKd plugin
 	- Arthur Khudyaev (@gerhart_x) - 26-Jan-2019 - Migration to MemProcFS/LeechCore
 	- Matthieu Suiche (@msuiche) 11-Dec-2018 - Open-sourced LiveCloudKd in December 2018 on GitHub
 	- Arthur Khudyaev (@gerhart_x) - 28-Oct-2018 - Add partial Windows 10 support
@@ -33,17 +35,56 @@ Revision History:
 #include "hvdd.h"
 
 BOOLEAN UseWinDbg = FALSE;
+BOOLEAN UseWinDbgX = FALSE;
 LPCWSTR DestinationPath = NULL;
 ULONG Action = -1;
+BOOLEAN UseEXDi = FALSE;
 
 CHAR Disclamer[] = ".Reverse Engineering of this program is prohibited. Please respect intellectual property. The code of this program and techniques involved belongs to MoonSols SARL and Matthieu Suiche.\n";
+
+
+BOOLEAN
+WriteEXDiPartitionId(ULONG VmId)
+{
+	HKEY hDrvKey, hkey;
+	LSTATUS regStatus;
+	BOOLEAN Ret = FALSE;
+	regStatus = RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Services\\hvmm", 0, KEY_ALL_ACCESS, &hDrvKey);
+	if (regStatus != ERROR_SUCCESS) {
+		{
+			wprintf(L"Driver parameter key was not created\n");
+			Ret = FALSE;
+		}
+	}
+
+	regStatus = RegCreateKey(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Services\\hvmm\\Parameters", &hkey);
+
+	if (regStatus == ERROR_SUCCESS)
+	{
+		regStatus = RegSetValueEx(hkey, L"VmId", 0, REG_DWORD, (const BYTE*)&VmId, sizeof(VmId));
+		if (regStatus == ERROR_SUCCESS)
+		{
+			Ret = TRUE;
+		}
+		else
+		{
+			wprintf(L"VmId key was not created\n");
+			Ret = FALSE;
+		}
+
+	}
+	RegCloseKey(hkey);
+	RegCloseKey(hDrvKey);
+	return Ret;
+}
 
 VOID
 Help()
 {
     Disclamer[0] = '!';
-    wprintf(L"Usage: LiveCloudKd.exe [/w] [/a {0-2}] [-o path] [/?]\n"
-            L"      /w         Runs Windbg instead of Kd (Kd is the default).\n"
+    wprintf(L"Usage: LiveCloudKd.exe [/w] [/wx] [/a {0-2}] [/m {0-2}] [e] [-o path] [/?]\n"
+            L"      /w         Run Windbg instead of Kd (Kd is the default).\n"
+			L"      /x        Run Windbg Preview instead of Kd (Kd is the default).\n"
             L"      /a         Pre-selected action.\n"
             L"                    0 Live kernel debugging\n"
             L"                    1 Produce a linear physical memory dump\n"
@@ -52,6 +93,8 @@ Help()
 			L"      /m         Memory access type.\n"
 			L"					  0 - WinHv.sys interface	\n"
 			L"					  1 - Raw memory interface (default)	\n"
+			L"					  2 - injected vidaux.dll memory interface	\n"
+			L"		/e   	   LiveCloudKd will be working using EXDi plugin. See description on github page for more detailes \n"
             L"      /?         Print this help.\n");
 }
 
@@ -63,6 +106,7 @@ ParseArguments(
 {
 ULONG Index;
 UCHAR ChAction;
+BOOLEAN bChoice = FALSE;
 
     for (Index = 1; Index < argc; Index += 1)
     {
@@ -72,7 +116,12 @@ UCHAR ChAction;
         {
             case L'w':
                 UseWinDbg = TRUE;
+				UseEXDi = TRUE;
             break;
+			case L'x':
+				UseWinDbgX = TRUE;
+				UseEXDi = TRUE;
+				break;
             case L'o':
                 if ((Index + 1) < argc)
                 {
@@ -96,20 +145,29 @@ UCHAR ChAction;
                 getchar();
                 exit(1);
             break;
+			case L'e':
+				UseEXDi = TRUE;
+			break;
 			case L'm':
 				if ((Index + 1) < argc)
 				{
 					ChAction = (UCHAR)argv[Index + 1][0];
 					if (ChAction == '0') 
 					{
-						g_MemoryInterfaceType = ReadInterfaceWinHv;
+						g_MemoryReadInterfaceType = ReadInterfaceWinHv;
+						bChoice = TRUE;
 					}
-					else if (ChAction == '1')
+					if (ChAction == '1')
 					{
-						g_MemoryInterfaceType = ReadInterfaceHvmmDrvInternal;
+						g_MemoryReadInterfaceType = ReadInterfaceHvmmDrvInternal;
+						bChoice = TRUE;
 					}
-					else 
+					if (ChAction == '2')
 					{
+						g_MemoryReadInterfaceType = ReadInterfaceVidAux;
+						bChoice = TRUE;
+					}
+					if (bChoice == FALSE) {
 						Red(L"Unknown memory access type");
 					}
 					Index += 1;
@@ -132,11 +190,12 @@ ULONG i;
 ULONG VmId, ActionId;
 
 WCHAR Destination[MAX_PATH + 1];
+//WCHAR wVmTypeString[100];
 
 HANDLE Handle;
 USHORT Color;
 
-wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
+wprintf(L"      LiveCloudKd - 1.2.2.20190726, beta\n"
 	L"      Microsoft Hyper-V Virtual Machine  Physical Memory Dumper & Live Kernel Debugger\n"
 	L"      Copyright (C) 2010-2019, Matthieu Suiche (@msuiche)\n"
 	L"      Copyright (C) 2019, Comae Technologies DMCC <http://www.comae.com> <support@comae.io>\n"
@@ -149,6 +208,8 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
 
     if (!ImportGlobalFunctions()) goto Exit;
 
+	//printf("PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY = 0x%x", PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY);
+
 	//GetImportFuntions();
 	//printf("size of FUNCTION_TABLE is %zx\n", sizeof(FUNCTION_TABLE));
     //printf("size of X64_CONTEXT is %zu\n", sizeof(X64_CONTEXT));
@@ -160,12 +221,13 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
 	// Set default g_MemoryInterfaceType (if -m option was not specified)
 	//
 
-	if (g_MemoryInterfaceType == ReadInterfaceUnsupported) {
-		g_MemoryInterfaceType = ReadInterfaceHvmmDrvInternal;
+	if (g_MemoryReadInterfaceType == ReadInterfaceUnsupported) {
+		g_MemoryReadInterfaceType = ReadInterfaceHvmmDrvInternal;
+		//g_MemoryReadInterfaceType = ReadInterfaceVidAux;
 	}
 	
 	
-	switch (g_MemoryInterfaceType)
+	switch (g_MemoryReadInterfaceType)
 	{
 		case ReadInterfaceHvmmDrvInternal:
 			wprintf(L"   Memory interface type is raw access\n");
@@ -176,8 +238,12 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
 		break;
 
 		case ReadInterfaceVidDll:
-			wprintf(L"   Memory interface type is vid.dll. Warning, it is unstable\n");
+			wprintf(L"   Memory interface type is vid.dll. Warning, it is must be prepared for special build of vid.sys and only for testing purposes\n");
 		break;
+
+		case ReadInterfaceVidAux:
+			wprintf(L"   Memory interface type is vidaux.dll (injection in vmwp.exe)\n");
+			break;
 
 		default:
 			wprintf(L"   Memory interface is unknown\n");
@@ -185,7 +251,7 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
 		break;
 	}
 	
-    Partitions = SdkGetPartitions(&PartitionCount, g_MemoryInterfaceType);
+    Partitions = SdkGetPartitions(&PartitionCount, g_MemoryReadInterfaceType, TRUE);
 
 	wprintf(L"   Virtual Machines:\n");
     if (PartitionCount == 0)
@@ -195,9 +261,11 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
     }
 
     for (i = 0; i < PartitionCount; i += 1)
-    {
-        wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X)\n", i, Partitions[i].VidVmInfo.FriendlyName, Partitions[i].VidVmInfo.PartitionId);
+    {	
+		wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X, %s)\n", i, Partitions[i].VidVmInfo.FriendlyName, Partitions[i].VidVmInfo.PartitionId, Partitions[i].VmTypeString);
     }
+
+
 
     VmId = 0;
     while ((VmId < '0') || (VmId > '9'))
@@ -228,7 +296,7 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
     if (Action == -1)
     {
         ActionId = 0;
-		//FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+		FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 		wprintf(L"\n"
 			L"   Please select the Action ID\n"
 			L"   > ");
@@ -267,12 +335,28 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
         }
     }
 
+	//
+	//if EXDi mode is enabled, we write VmId to register
+	//
+
+	if (UseEXDi == TRUE) {
+		WriteEXDiPartitionId(VmId);
+	}
+	//Test
+	//PVOID TmpBuf = malloc(PAGE_SIZE);
+	//if (!TmpBuf)
+	//	goto Exit;
+
+	//SdkHvmmReadVmMemory(&Partitions[VmId],0x1000,PAGE_SIZE, TmpBuf, ReadInterfaceVidAux);
+
+	//SdkResumeVm(Partitions[VmId].VidVmInfo.FriendlyName);
+
 
     //
     // Now, we successfully have the Partition Handle. Let's look for Memory Blocks.
     //
 
-	if (g_MemoryInterfaceType == ReadInterfaceVidDll) {
+	if (g_MemoryReadInterfaceType == ReadInterfaceVidDll) {
 
 		BOOLEAN Ret = SdkHvmmPatchPsGetCurrentProcess(Partitions[VmId].WorkerPid, Partitions[VmId].CurrentProcess);
 		if (!Ret) {
@@ -281,11 +365,15 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
 		}
 	}
 
+	//SdkControlVmState(&Partitions[VmId], SuspendVm, SuspendResumeWriteSpecRegister);
     switch (ActionId)
     {
         case 0:
-            if (SdkFillHvddPartitionStructure(&Partitions[VmId]))
-                DumpLiveVirtualMachine(&Partitions[VmId]);
+			if (SdkFillHvddPartitionStructure(&Partitions[VmId]))
+			{
+				//SdkControlVmState(&Partitions[VmId], ResumeVm, SuspendResumeWriteSpecRegister);
+				DumpLiveVirtualMachine(&Partitions[VmId]);
+			}
             else Red(L"   Cannot initialize crash dump header.\n");
         break;
         case 1:
@@ -301,8 +389,8 @@ wprintf(L"      LiveCloudKd - 1.2.0.20190427, beta\n"
     }
 
 Exit:
+	wprintf(L"kd.exe was closed. Press enter for closing LiveCloudKd\n");
     SdkDestroyPartitions();
-
     getchar();
 
     return TRUE;

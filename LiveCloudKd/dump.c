@@ -32,7 +32,7 @@ Revision History:
 
 #include "hvdd.h"
 
-READ_MEMORY_METHOD g_MemoryInterfaceType = ReadInterfaceUnsupported;
+READ_MEMORY_METHOD g_MemoryReadInterfaceType = ReadInterfaceUnsupported;
 
 BOOLEAN
 DumpVirtualMachine(
@@ -60,13 +60,16 @@ DumpVirtualMachine(
     White(L"PageCountTotal = 0x%x\n", lPageCountTotal);
     Green(L"\n"
           L"   Total Size: %d MB\n", (ULONG)(((ULONG)lPageCountTotal * PAGE_SIZE) / (1024 * 1024)));
-    White(L"   Starting... ");
+    White(L"   Starting... \n");
 
     for (Index = 0;
          Index < (ULONG)lPageCountTotal;
          Index += (BLOCK_SIZE / PAGE_SIZE))
     {
-		if (Index % (10 * BLOCK_SIZE)) printf("%I64d MBs... ", Index / BLOCK_SIZE);
+		if (Index % (10 * 1024) == 0) {
+			printf("%I64d MBs... \n", (Index * PAGE_SIZE) / (1024 * 1024));
+		}
+
 
 #ifdef USE_VIDDLL_FUNCTIONS
 		BlockIndexInfo.PartitionHandle = PartitionEntry->PartitionHandle;
@@ -91,11 +94,11 @@ DumpVirtualMachine(
                 }
         }
 #else
-		Ret = SdkHvmmReadVmMemory(PartitionEntry,
+		Ret = SdkHvmmReadPhysicalMemory(PartitionEntry,
 			Index,
 			BLOCK_SIZE,
 			Buffer,	
-			g_MemoryInterfaceType
+			g_MemoryReadInterfaceType
 		);
 #endif
 		if (Ret == TRUE) {
@@ -106,7 +109,7 @@ DumpVirtualMachine(
 			RtlZeroMemory(Buffer, BLOCK_SIZE);
 			WriteFileSynchronous(FileHandle, Buffer, BLOCK_SIZE);
 		}
-		printf("Index = 0x%I64x", Index);
+		//printf("Index = 0x%I64x\n", Index);
 	}
 
     Green(L"Done.\n");
@@ -175,11 +178,12 @@ BOOLEAN Ret = FALSE;
     }
     else
     {
-        ContextVa = 0;
-        if (SdkMmReadVirtualAddress(PartitionEntry, PartitionEntry->KiExcaliburData.KiProcessorBlock,
-                                 &ContextVa, sizeof(ULONG64)) == FALSE) goto Exit;
+        //ContextVa = 0;
+        //if (SdkMmReadVirtualAddress(PartitionEntry, PartitionEntry->KiExcaliburData.KiProcessorBlock,
+        //                         &ContextVa, sizeof(ULONG64)) == FALSE) goto Exit;
 
-		ContextVa = ContextVa + PartitionEntry->KiExcaliburData.OffsetPrcbProcStateContext - PartitionEntry->KiExcaliburData.OffsetPrcbProcStateSpecialReg;
+	/*	ContextVa = ContextVa + PartitionEntry->KiExcaliburData.OffsetPrcbProcStateContext - PartitionEntry->KiExcaliburData.OffsetPrcbProcStateSpecialReg;*/
+		ContextVa = (ULONG64) PartitionEntry->KiExcaliburData.Context;
     }
 
 	//ContextVa = (ULONG64)PartitionEntry->KiExcaliburData.Context;
@@ -199,11 +203,11 @@ BOOLEAN Ret = FALSE;
 			Buffer,
 			BLOCK_SIZE);
 #else
-		Ret = SdkHvmmReadVmMemory(PartitionEntry,
+		Ret = SdkHvmmReadPhysicalMemory(PartitionEntry,
 			Index,
 			BLOCK_SIZE,
 			Buffer,
-			g_MemoryInterfaceType
+			g_MemoryReadInterfaceType
 		);
 #endif
 		
@@ -287,88 +291,98 @@ DumpLiveVirtualMachine(
     ULONG64 ContextVa;
     PKDDEBUGGER_DATA64 pTmpKdBlock;
 
-    if (DumpFillHeader(PartitionEntry, &Header, &HeaderSize) == FALSE) goto Exit;
+    //Buffer = malloc(BLOCK_SIZE);
+    //if (Buffer == NULL) goto Exit;
 
-    Buffer = malloc(BLOCK_SIZE);
-    if (Buffer == NULL) goto Exit;
+	if (UseEXDi == FALSE)
+	{
+		GetWindowsDirectory(WindowsDir, sizeof(WindowsDir) / sizeof(WindowsDir[0]));
+		swprintf_s(CrashFilePath, sizeof(CrashFilePath) / sizeof(CrashFilePath[0]),
+			L"%s\\hvdd.dmp", WindowsDir);
 
-    GetWindowsDirectory(WindowsDir, sizeof(WindowsDir) / sizeof(WindowsDir[0]));
-    swprintf_s(CrashFilePath, sizeof(CrashFilePath) / sizeof(CrashFilePath[0]),
-               L"%s\\hvdd.dmp", WindowsDir);
+		HvddFile = CreateFile(CrashFilePath,
+			GENERIC_WRITE,
+			FILE_SHARE_READ,
+			NULL,
+			CREATE_ALWAYS,
+			FILE_ATTRIBUTE_HIDDEN | FILE_FLAG_NO_BUFFERING,
+			NULL
+		);
 
-    HvddFile = CreateFile(CrashFilePath,
-                          GENERIC_WRITE,
-                          FILE_SHARE_READ,
-                          NULL, 
-                          CREATE_ALWAYS,
-                          FILE_ATTRIBUTE_HIDDEN | FILE_FLAG_NO_BUFFERING, 
-                          NULL
-    );
+		if (HvddFile == INVALID_HANDLE_VALUE) goto Exit;
+		
+		if (DumpFillHeader(PartitionEntry, &Header, &HeaderSize) == FALSE) goto Exit;
+		
+		FunctionTable._LoadLibrary = LoadLibraryW;
+		FunctionTable._GetProcAddress = GetProcAddress;
+		FunctionTable._MessageBoxW = MessageBoxW;
+		FunctionTable._MessageBoxA = MessageBoxA;
+		FunctionTable._CreateFileW = CreateFileW;
+		FunctionTable._SetFilePointer = SetFilePointer;
+		FunctionTable._VirtualAlloc = VirtualAlloc;
+		FunctionTable._VirtualFree = VirtualFree;
+		FunctionTable._VirtualProtect = VirtualProtect;
+		FunctionTable._ReadFile = ReadFile;
+		FunctionTable._VidReadMemoryBlockPageRange = g_VidDll.VidReadMemoryBlockPageRange;
+		FunctionTable._VidWriteMemoryBlockPageRange = g_VidDll.VidWriteMemoryBlockPageRange;
+		FunctionTable._SdkHvmmInternalReadMemory = SdkHvmmInternalReadMemory;
+		FunctionTable._SdkHvmmHvReadGPA = SdkHvmmHvReadGPA;
+		FunctionTable._SdkHvmmGetMemoryBlockInfoFromGPA = SdkHvmmGetMemoryBlockInfoFromGPA;
+		FunctionTable._SdkHvmmReadPhysicalMemory = SdkHvmmReadPhysicalMemory;
+		FunctionTable._SdkHvmmRestorePsGetCurrentProcess = SdkHvmmRestorePsGetCurrentProcess;
+		FunctionTable._SdkHvmmPatchPsGetCurrentProcess = SdkHvmmPatchPsGetCurrentProcess;
+		FunctionTable._CreateFileMappingA = CreateFileMappingA;
+		FunctionTable._CreateFileMappingW = CreateFileMappingW;
+		FunctionTable._MapViewOfFile = MapViewOfFile;
+		FunctionTable._UnmapViewOfFile = UnmapViewOfFile;
+		FunctionTable._SetLastError = SetLastError;
 
-    if (HvddFile == INVALID_HANDLE_VALUE) goto Exit;
+		FunctionTable.CrashDumpHandle = INVALID_HANDLE_VALUE;
+		FunctionTable.HeaderSize = HeaderSize;
+		FunctionTable.Header = Header;
+		FunctionTable.MemoryHandle = NULL;
+		FunctionTable.ReadMemoryMethod = g_MemoryReadInterfaceType;
+		FunctionTable.PartitionHandle = PartitionEntry->PartitionHandle;
+		FunctionTable.PartitionHandleConst = PartitionEntry->PartitionHandle;
+		FunctionTable.FileSize.QuadPart = PartitionEntry->KiExcaliburData.MmMaximumPhysicalPage * PAGE_SIZE + HeaderSize;
+		FunctionTable.PartitionId = PartitionEntry->VidVmInfo.PartitionId;
+		RtlCopyMemory(&(FunctionTable.PartitionEntry), PartitionEntry,sizeof(HVDD_PARTITION));
 
-    FunctionTable._LoadLibrary = LoadLibraryW;
-    FunctionTable._GetProcAddress = GetProcAddress;
-    FunctionTable._MessageBoxW = MessageBoxW;
-    FunctionTable._MessageBoxA = MessageBoxA;
-    FunctionTable._CreateFileW = CreateFileW;
-    FunctionTable._SetFilePointer = SetFilePointer;
-    FunctionTable._VirtualAlloc = VirtualAlloc;
-    FunctionTable._VirtualFree = VirtualFree;
-    FunctionTable._VirtualProtect = VirtualProtect;
-    FunctionTable._ReadFile = ReadFile;
-    FunctionTable._VidReadMemoryBlockPageRange = g_VidDll.VidReadMemoryBlockPageRange;
-    FunctionTable._VidWriteMemoryBlockPageRange = g_VidDll.VidWriteMemoryBlockPageRange;
-	FunctionTable._SdkHvmmInternalReadMemory = SdkHvmmInternalReadMemory;
-    FunctionTable._SdkHvmmHvReadGPA = SdkHvmmHvReadGPA;
-    FunctionTable._SdkHvmmGetMemoryBlockInfoFromGPA = SdkHvmmGetMemoryBlockInfoFromGPA;
-	FunctionTable._SdkHvmmReadVmMemory = SdkHvmmReadVmMemory;
-	FunctionTable._SdkHvmmRestorePsGetCurrentProcess = SdkHvmmRestorePsGetCurrentProcess;
-	FunctionTable._SdkHvmmPatchPsGetCurrentProcess = SdkHvmmPatchPsGetCurrentProcess;
-    FunctionTable._CreateFileMappingA = CreateFileMappingA;
-    FunctionTable._CreateFileMappingW = CreateFileMappingW;
-    FunctionTable._MapViewOfFile = MapViewOfFile;
-    FunctionTable._UnmapViewOfFile = UnmapViewOfFile;
-    FunctionTable._SetLastError = SetLastError;
-
-    FunctionTable.CrashDumpHandle = INVALID_HANDLE_VALUE;
-    FunctionTable.HeaderSize = HeaderSize;
-    FunctionTable.Header = Header;
-	FunctionTable.MemoryHandle = NULL;
-	FunctionTable.ReadMemoryMethod = g_MemoryInterfaceType;
-    FunctionTable.PartitionHandle = PartitionEntry->PartitionHandle;
-    FunctionTable.PartitionHandleConst = PartitionEntry->PartitionHandle;
-	FunctionTable.FileSize.QuadPart = PartitionEntry->KiExcaliburData.MmMaximumPhysicalPage * PAGE_SIZE + HeaderSize;
-    FunctionTable.PartitionId = PartitionEntry->VidVmInfo.PartitionId;
-	RtlCopyMemory(&(FunctionTable.PartitionEntry), PartitionEntry,sizeof(HVDD_PARTITION));
-
-    FunctionTable.KdDebuggerDataBlockPa = PartitionEntry->KiExcaliburData.KdDebuggerDataBlockPa;
-    pTmpKdBlock = (PKDDEBUGGER_DATA64) PartitionEntry->KiExcaliburData.KdDebuggerDataBlockBlock;
-    pTmpKdBlock->SavedContext = (ULONG64) PartitionEntry->KiExcaliburData.Context;
-    RtlCopyMemory(FunctionTable.KdDebuggerDataBlockBlock, PartitionEntry->KiExcaliburData.KdDebuggerDataBlockBlock, KD_DEBUGGER_BLOCK_PAGE_SIZE);
+		FunctionTable.KdDebuggerDataBlockPa = PartitionEntry->KiExcaliburData.KdDebuggerDataBlockPa;
+		pTmpKdBlock = (PKDDEBUGGER_DATA64) PartitionEntry->KiExcaliburData.KdDebuggerDataBlockBlock;
+		pTmpKdBlock->SavedContext = (ULONG64) PartitionEntry->KiExcaliburData.Context;
+		RtlCopyMemory(FunctionTable.KdDebuggerDataBlockBlock, PartitionEntry->KiExcaliburData.KdDebuggerDataBlockBlock, KD_DEBUGGER_BLOCK_PAGE_SIZE);
 
 
-	printf("FunctionTable.FileSize.QuadPart = 0x%llx\n", FunctionTable.FileSize.QuadPart);
+		printf("FunctionTable.FileSize.QuadPart = 0x%llx\n", FunctionTable.FileSize.QuadPart);
 
-    ContextVa = (ULONG64)PartitionEntry->KiExcaliburData.Context;
-	printf("FunctionTable.ContextVa 0x%llx \n", ContextVa);
-    ContextPa = SdkMmGetPhysicalAddress(PartitionEntry, ContextVa);
-	printf("FunctionTable.ContextPa 0x%I64X \n", ContextPa.QuadPart);
-    //PartitionEntry->KiExcaliburData.Context = (PCONTEXT) ContextVa;
+		ContextVa = (ULONG64)PartitionEntry->KiExcaliburData.Context;
+		//printf("FunctionTable.ContextVa 0x%llx \n", ContextVa);
+		ContextPa = SdkMmGetPhysicalAddress(PartitionEntry, ContextVa);
+		printf("FunctionTable.ContextPa 0x%I64X \n", ContextPa.QuadPart);
+		//PartitionEntry->KiExcaliburData.Context = (PCONTEXT) ContextVa;
 
-    FunctionTable.ContextPageIndex = (ContextPa.QuadPart / PAGE_SIZE);
-	printf("FunctionTable.ContextPageIndex %llx \n", FunctionTable.ContextPageIndex);
-    FunctionTable.ContextOffsetLow = (ContextPa.LowPart & (PAGE_SIZE - 1));
-	printf("FunctionTable.ContextOffsetLow %x \n", FunctionTable.ContextOffsetLow);
+		FunctionTable.ContextPageIndex = (ContextPa.QuadPart / PAGE_SIZE);
+		printf("FunctionTable.ContextPageIndex %llx \n", FunctionTable.ContextPageIndex);
+		FunctionTable.ContextOffsetLow = (ContextPa.LowPart & (PAGE_SIZE - 1));
+		printf("FunctionTable.ContextOffsetLow %x \n", FunctionTable.ContextOffsetLow);
 
-    FunctionTable.MachineType = SdkGetMachineType(PartitionEntry);
-    FunctionTable.IsDllLoad = FALSE;
+		FunctionTable.MachineType = SdkGetMachineType(PartitionEntry);
+		FunctionTable.IsDllLoad = FALSE;
 
-    Handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    Color = GetConsoleTextAttribute(Handle);
-    SetConsoleTextAttribute(Handle, 0xF);
+		Handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		Color = GetConsoleTextAttribute(Handle);
+		SetConsoleTextAttribute(Handle, 0xF);
 
-    LaunchKd(CrashFilePath, PartitionEntry);
+		LaunchKd(CrashFilePath, PartitionEntry);
+	}
+
+	if (UseWinDbg == TRUE) {
+		LaunchWinDbg(PartitionEntry);
+	}
+	if (UseWinDbgX == TRUE) {
+		LaunchWinDbgX(PartitionEntry);
+	}
 
     getchar();
 
@@ -501,14 +515,14 @@ DumpFillHeader64(
 
     Header64->RequiredDumpSpace.QuadPart = 
         (PartitionEntry->KiExcaliburData.MmMaximumPhysicalPage * PAGE_SIZE) + sizeof(DUMP_HEADER64);
-	printf("sizeof(DUMP_HEADER64) = 0x%zx\n", sizeof(DUMP_HEADER64)); // must be 1Mb according Windows Internals 6th
+	//printf("sizeof(DUMP_HEADER64) = 0x%zx\n", sizeof(DUMP_HEADER64)); // must be 1Mb according Windows Internals 6th
 
     //
     // BUGBUG: Fill me with a real context.
     //
     RtlZeroMemory(Header64->ContextRecord, sizeof(Header64->ContextRecord));
 
-	printf("sizeof(CONTEXT) = 0x%zx\n", sizeof(CONTEXT));
+	//printf("sizeof(CONTEXT) = 0x%zx\n", sizeof(CONTEXT));
 
     Buffer = malloc(sizeof(CONTEXT));
     if (Buffer == NULL) {
