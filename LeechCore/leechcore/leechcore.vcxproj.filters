@@ -63,12 +63,6 @@
     <ClCompile Include="leechrpcshared.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="device_hvmm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="hvmm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="leechcore_devices.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -125,7 +119,7 @@
     <ClInclude Include="version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="device_hvmm.h">
+    <ClInclude Include="leechcore_devices.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

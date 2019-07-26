@@ -106,7 +106,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)files\</OutDir>
     <IntDir>$(SolutionDir)files\temp\$(ProjectName)\$(PlatformShortName)\</IntDir>
-    <IncludePath>$(SolutionDir)LiveCloudKdSdk\LiveCloudKdSdk\include\public;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(SolutionDir)files\temp\$(ProjectName)\$(PlatformShortName)\</IntDir>
@@ -115,8 +114,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)files\</OutDir>
     <IntDir>$(SolutionDir)files\temp\$(ProjectName)\$(PlatformShortName)\</IntDir>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>D:\Projects\HyperVDebug\LiveCloudKdSdk\LiveCloudKdSdk\include\public;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMT|x64'">
     <OutDir>$(SolutionDir)files\</OutDir>
@@ -138,7 +135,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Rpcrt4.lib;$(SolutionDir)files\LiveCloudKdSdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(OutDir)\lib\$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>$(OutDir)lib\$(TargetName).lib</ImportLibrary>
@@ -196,7 +193,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Rpcrt4.lib;D:\Projects\HyperVDebug\files\LiveCloudKdSdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(OutDir)\lib\$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>$(OutDir)lib\$(TargetName).lib</ImportLibrary>
@@ -318,13 +315,11 @@
     <ClCompile Include="device_file.c" />
     <ClCompile Include="device_fpga.c" />
     <ClCompile Include="device_hvsavedstate.c" />
-    <ClCompile Include="device_hvmm.c" />
     <ClCompile Include="device_pmem.c" />
     <ClCompile Include="device_rawtcp.c" />
     <ClCompile Include="device_sp605tcp.c" />
     <ClCompile Include="device_tmd.c" />
     <ClCompile Include="device_usb3380.c" />
-    <ClCompile Include="hvmm.c" />
     <ClCompile Include="leechcore.c" />
     <ClCompile Include="leechcore_devices.c" />
     <ClCompile Include="leechrpcclient.c" />
@@ -340,13 +335,13 @@
     <ClInclude Include="device_file.h" />
     <ClInclude Include="device_fpga.h" />
     <ClInclude Include="device_hvsavedstate.h" />
-    <ClInclude Include="device_hvmm.h" />
     <ClInclude Include="device_pmem.h" />
     <ClInclude Include="device_rawtcp.h" />
     <ClInclude Include="device_sp605tcp.h" />
     <ClInclude Include="device_tmd.h" />
     <ClInclude Include="device_usb3380.h" />
     <ClInclude Include="leechcore.h" />
+    <ClInclude Include="leechcore_devices.h" />
     <ClInclude Include="leechrpc.h" />
     <ClInclude Include="leechrpc_h.h" />
     <ClInclude Include="memmap.h" />
