@@ -1,4 +1,4 @@
-# LiveCloudKdSdk v0.1.0
+# LiveCloudKdSdk v0.2.0
 
 LiveCloudSDK is plugin for working with Microsoft Hyper-V virtual machines memory. It was developed during 
 Microsoft Windows Defender Application Guard research and therefore support Windows 10, build 1803 and above 
@@ -8,13 +8,16 @@ Part of code was taken from LiveCloudKd project https://github.com/comaeio/LiveC
 So it was developed, because Microsoft broke vid.dll API (probably, because of one careless report to MSRC). 
 Therefore some part of code is not open-sourced because, it use some internal vid.sys structures and code from other not open-sourced utilities.
 
-### LiveCloudSDK supports 2 methods of reading Hyper-V Memory and 1 writing.
+### LiveCloudSDK supports 3 methods of reading Hyper-V Memory and 1 writing.
 
-1. ReadInterfaceWinHv\WriteInterfaceWinHv - uses Hypercalls HvReadGpa for memory reading. According Hyper-V TLFS HvReadGpa can read only 
-maximum 0x10 bytes per call therefore it slowest method (but robust - Sysinternals LiveKD uses it). Containers doesn't support it.                   
+1. ReadInterfaceWinHv\WriteInterfaceWinHv - uses Hypercalls HvReadGpa for memory reading\HvWriteGpa for writing. According Hyper-V TLFS HvReadGpa\HvWriteGpa can read\write only 
+maximum 0x10 bytes per call, therefore it slowest method (but robust - Sysinternals LiveKD uses it). Containers doesn't support it.  
+                
 2. ReadInterfaceHvmmDrvInternal - hvmm.sys directly read memory blocks from kernel mode. It uses internals vid.sys structures 
-and different methods for FullVM and Hyper-V Containers (WDAG and Windows Sandbox). 
+and different methods for FullVM and Hyper-V Containers (WDAG and Windows Sandbox, docker containers, launching with --isolation=hyperv option). 
 Of course, it can be broken during every patch of vid.sys, but now it works with new version of vid.sys without patching.
+
+3. ReadInterfaceVidAux - uses vidaux.dll, which is injected to vmwp.exe.
 
 ReadInterfaceVidDll\WriteInterfaceVidDll - only for testing purposes!! Do not use it real environment. Method patch windows kernel for removing PsGetCurrentProcess check,
 which blocks every query for every process excluding parent vmwp.exe process. It need special hvmm.sys assembly for concrete build vid.sys.
@@ -37,15 +40,36 @@ for all project, but method can be specified during SdkHvmmReadVmMemory call
 For using it you hade to:
 1. Include header file LiveCloudKdSdkPublic.h in your project. It contains all public function definitions with small descriptions.
 2. Include library LiveCloudKdSdk.lib in Visual Studio: Linker-All Options-Additional Dependencies
-3. Place LiveCloudKdSdk.dll and hvmm.sys in one place with your exe file.
+3. Place LiveCloudKdSdk.dll, hvmm.sys and vidaux.dll in one place with your exe file.
 
 Functions description:
 
 ```c
 
 Example:
-
+See more examples in LiveCloudKdExample project.
 	
+```
+
+#SdkControlVmState
+
+Resume or suspending VM (Action is SuspendVm or ResumeVm).
+ActionMethod is SuspendResumePowershell or SuspendResumeWriteSpecRegister.
+
+```c
+BOOLEAN
+SdkControlVmState(
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ VM_STATE_ACTION Action,
+	_In_ SUSPEND_RESUME_METHOD ActionMethod
+);
+
+Example:
+
+SdkControlVmState(g_CurrentPartition, SuspendVm, SuspendResumePowershell);
+
+SdkControlVmState(g_CurrentPartition, ResumeVm, SuspendResumePowershell);
+
 ```
 
 # SdkGetMachineType
@@ -195,18 +219,39 @@ Ret = SdkMmReadVirtualAddress(PartitionEntry,
 
 ```
 
-# SdkHvmmReadVmMemory
+# SdkMmWriteVirtualAddress
+Write bytes to guest address space, sarting from (Va), data gets from (Buffer)
+
+```c
+
+BOOLEAN
+SdkMmWriteVirtualAddress(
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ ULONG64 Va,
+	_Out_ PVOID Buffer,
+	_In_ ULONG Size
+);
+
+Example (See EXDiKdSample project for demo):
+
+bWriteMemmory = SdkMmWriteVirtualAddress(g_Partition, address, pRawBuffer, (ULONG)size);
+
+
+```
+
+# SdkHvmmReadPhysicalMemory
 
 
 Common function for reading memory. In dependency of Method read guest Hyper-V memory using different  variants
 	- ReadInterfaceWinHv,                  
 	- ReadInterfaceHvmmDrvInternal,		 
-	- ReadInterfaceVidDll (only for testing purposes)				  
+	- ReadInterfaceVidDll (only for testing purposes)	
+	- ReadInterfaceVidAux
 
 ```c
 
 BOOLEAN
-SdkHvmmReadVmMemory(
+SdkHvmmReadPhysicalMemory(
 	_In_ PHVDD_PARTITION PartitionEntry,
 	_In_ MB_PAGE_INDEX StartPosition,
 	_In_ UINT64 ReadByteCount,
@@ -227,12 +272,37 @@ Example:
         return FALSE;
     } 
 
-	Ret = SdkHvmmReadVmMemory(PartitionEntry,
+	Ret = SdkHvmmReadPhysicalMemory(PartitionEntry,
 		Index,
 		BLOCK_SIZE,
 		Buffer,	
 		g_MemoryInterfaceType
 	);
+	
+```
+
+# SdkHvmmWritePhysicalMemory
+
+Common function for writing physical memory. In dependency of Method read guest Hyper-V memory using different variants
+		WriteInterfaceWinHv  
+		
+```c
+
+BOOLEAN
+SdkHvmmWritePhysicalMemory(
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ MB_PAGE_INDEX StartPosition,
+	_In_ UINT64 WrittenBytesCount,
+	_In_ PVOID ClientBuffer,
+	_In_ WRITE_MEMORY_METHOD Method
+);
+
+Example (See EXDiKdSample project for demo):
+
+BOOLEAN bResult = FALSE;	
+bResult = SdkHvmmWritePhysicalMemory(g_Partition, Address, bufferSize, pRawBuffer, g_MemoryWriteInterfaceType);
+
+
 	
 ```
 
@@ -265,6 +335,29 @@ Example:
 
 	
 ```
+
+# SdkHvmmWriteVpRegister
+Write guest OS registers.
+
+```c
+
+BOOLEAN
+SdkHvmmWriteVpRegister(
+	_In_ ULONG64 PartitionId,
+	_In_ HV_VP_INDEX VpIndex,
+	_In_ HV_REGISTER_NAME RegisterCode,
+	_In_ ULONG64 RegisterValue
+);
+
+Example (see EXDiKdSample project for demo):
+
+BOOLEAN bGetVirtualProcessorState;
+
+	bGetVirtualProcessorState = SdkHvmmWriteVpRegister(g_Partition->VidVmInfo.PartitionId, 0, RegisterName, RegisterValue);
+
+	
+```
+
 
 # SdkHvmmHvTranslateVA
 
@@ -428,62 +521,63 @@ Example:
 	
 ```
 
+## function wrapper with Partition internal handle using (see LiveCloudKdExample project for detailes)
+
+# SdkQueryInformation
+Get information form Partition object, using handle.
+
+```c
+
+typedef enum _HVDD_INFORMATION_CLASS {
+	HvddKdbgData,					//0. Return pointer to PKDDEBUGGER_DATA64
+	HvddPartitionFrienldyName,		//1. Return pointer to WCHAR Partition friendly name
+	HvddPartitionId,				//2. Return pointer to ULONG64 PartitionId
+	HvddVmtypeString,				//3. Return pointer to WCHAR VmTypeString
+	HvddStructure,					//4. Return pointer to PHVDD_PARTITION
+	HvddKiProcessorBlock,			//5. Return pointer to ULONG64 PHVDD_PARTITION-EXCALIBUR_DATA.KiProcessorBlock
+	HvddMmMaximumPhysicalPage		//6. Return pointer to ULONG64 PHVDD_PARTITION-EXCALIBUR_DATA.MmMaximumPhysicalPage
+} HVDD_INFORMATION_CLASS;
+
+BOOLEAN SdkQueryInformation(
+	_In_ ULONG64 PartitionIntHandle,
+	_In_ HVDD_INFORMATION_CLASS HvddInformationClass,
+	_Inout_ PVOID HvddInformation
+);
+
+Example:
+
+	ULONG64 PartitionId = 0;
+	WCHAR* FriendlyNameP = NULL;	
+	PULONG64 Partitions;
+	ULONG PartitionCount = 0;
+
+	Partitions = SdkGetPartitionsHandle(&PartitionCount, g_InterfaceType, TRUE);
+
+	SdkQueryInformation(Partitions[i], HvddPartitionFrienldyName, &FriendlyNameP);
+	SdkQueryInformation(Partitions[i], HvddPartitionId, &PartitionId);
+	
+```
 
 
+# SdkGetPartitionsHandle
+# SdkFillHvddPartitionStructureHandle
+# SdkHvmmReadPhysicalMemoryHandle
+# SdkMmReadVirtualAddressHandle
+# SdkControlVmStateHandle
+
+Same functionality as function without handle postfix
+
+```c
+
+PULONG64 SdkGetPartitionsHandle(_Inout_ PULONG PartitionTableCount,	_In_ READ_MEMORY_METHOD Method,	_In_ BOOLEAN LoadDriver);
+BOOLEAN SdkFillHvddPartitionStructureHandle(_In_ ULONG64 PartitionIntHandle);
+BOOLEAN SdkHvmmReadPhysicalMemoryHandle(_In_ ULONG64 PartitionIntHandle, _In_ MB_PAGE_INDEX StartPosition, _In_ UINT64 ReadByteCount, _Inout_ PVOID ClientBuffer, _In_ READ_MEMORY_METHOD Method);
+BOOLEAN SdkMmReadVirtualAddressHandle(_In_ ULONG64 PartitionIntHandle, _In_ ULONG64 Va, _Out_ PVOID Buffer, _In_ ULONG Size);
+BOOLEAN SdkControlVmStateHandle(_In_ ULONG64 PartitionIntHandle, _In_ VM_STATE_ACTION Action, _In_ SUSPEND_RESUME_METHOD ActionMethod);
 
 
+Example:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+See in Demo2 function in LiveCloudKdExample project
+	
+```

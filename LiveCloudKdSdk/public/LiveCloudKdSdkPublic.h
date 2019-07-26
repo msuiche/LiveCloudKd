@@ -1,6 +1,10 @@
 #ifndef __SDKPUBLIC_H__
 #define __SDKPUBLIC_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #define DLLEXPORT       __declspec(dllexport)
 
 #ifdef LIVECLOUDKDSDK_EXPORTS
@@ -11,20 +15,35 @@
 
 #include <windows.h>      
 #include <stdio.h>
-#include <wdbgexts.h>
+//#include <wdbgexts.h>
 #include "ntdefs.h"
 #include <tlhelp32.h> //EPROCESS defs
 #include <stdlib.h> //intrinsic functions
 
+
 #include "HyperV/vid.h"
 #include "LiveCloudKdSdkMisc.h"
+
 
 //
 //Read memory method for all operations. Must be defined in SdkGetPartitions call.
 //
 
-extern READ_MEMORY_METHOD g_MemoryInterfaceType;
+extern READ_MEMORY_METHOD g_MemoryReadInterfaceType;
+extern WRITE_MEMORY_METHOD g_MemoryWriteInterfaceType;
 
+//
+// Resume or suspending VM (Action is SuspendVm or ResumeVm)
+// ActionMethod is 	SuspendResumePowershell or SuspendResumeWriteSpecRegister
+//
+
+FUNCTION_TYPE
+BOOLEAN
+SdkControlVmState(
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ VM_STATE_ACTION Action,
+	_In_ SUSPEND_RESUME_METHOD ActionMethod
+);
 
 //
 // Get architecture of guest VM (x86 or AMD64). Plugin support only AMD64 guest VMs
@@ -60,7 +79,19 @@ FUNCTION_TYPE
 PHVDD_PARTITION
 SdkGetPartitions(
 	_Inout_ PULONG PartitionTableCount,
-	_In_ READ_MEMORY_METHOD Method
+	_In_ READ_MEMORY_METHOD Method,
+	_In_ BOOLEAN LoadDriver
+);
+
+//
+// Get friendly name of virtual machine partition object. For Full VM it equivalent for VM name. For WDAG and Windows Sandbox - 'Virtual machine'
+//
+
+FUNCTION_TYPE
+BOOLEAN
+SdkHvmmGetPartitionFriendlyName(
+	_Inout_ PHVDD_PARTITION PartitionEntry,
+	_In_ HANDLE PartitionHandle
 );
 
 //
@@ -88,15 +119,30 @@ SdkMmReadVirtualAddress(
 );
 
 //
-//Common function for reading memory. In dependency of Method read guest Hyper-V memory using different  variants
-//		ReadInterfaceWinHv,                  
-//		ReadInterfaceHvmmDrvInternal,		 
-//		ReadInterfaceVidDll (only for testing purposes)				  
+//Write bytes to guest address space, sarting from (Va), data gets from (Buffer)
+//		WriteInterfaceWinHv                  
 //
 
 FUNCTION_TYPE
 BOOLEAN
-SdkHvmmReadVmMemory(
+SdkMmWriteVirtualAddress(
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ ULONG64 Va,
+	_Out_ PVOID Buffer,
+	_In_ ULONG Size
+);
+
+//
+//Common function for reading physical memory. In dependency of Method read guest Hyper-V memory using different  variants
+//		ReadInterfaceWinHv,                  
+//		ReadInterfaceHvmmDrvInternal,		 
+//		ReadInterfaceVidDll (only for testing purposes)	
+//		ReadInterfaceVidAux
+//
+
+FUNCTION_TYPE
+BOOLEAN
+SdkHvmmReadPhysicalMemory(
 	_In_ PHVDD_PARTITION PartitionEntry,
 	_In_ MB_PAGE_INDEX StartPosition,
 	_In_ UINT64 ReadByteCount,
@@ -105,15 +151,44 @@ SdkHvmmReadVmMemory(
 );
 
 //
-// Read register from guest OS. 
+//Common function for writing physical memory. In dependency of Method read guest Hyper-V memory using different variants
+//		WriteInterfaceWinHv                  		  
 //
 
 FUNCTION_TYPE
 BOOLEAN
-SdkHvmmReadVpRegister(ULONG64 PartitionId,
+SdkHvmmWritePhysicalMemory(
+	_In_ PHVDD_PARTITION PartitionEntry,
+	_In_ MB_PAGE_INDEX StartPosition,
+	_In_ UINT64 WrittenBytesCount,
+	_In_ PVOID ClientBuffer,
+	_In_ WRITE_MEMORY_METHOD Method
+);
+
+//
+// Read guest OS registers. 
+//
+
+FUNCTION_TYPE
+BOOLEAN
+SdkHvmmReadVpRegister(
+	_In_ ULONG64 PartitionId,
 	_In_ HV_VP_INDEX VpIndex,
 	_In_ HV_REGISTER_NAME RegisterCode,
 	_Inout_ PHV_REGISTER_VALUE RegisterValue
+);
+
+//
+// Write guest OS registers.  
+//
+
+FUNCTION_TYPE
+BOOLEAN
+SdkHvmmWriteVpRegister(
+	_In_ ULONG64 PartitionId,
+	_In_ HV_VP_INDEX VpIndex,
+	_In_ HV_REGISTER_NAME RegisterCode,
+	_In_ ULONG64 RegisterValue
 );
 
 //
@@ -187,14 +262,33 @@ BOOLEAN SdkHvmmGetMemoryBlockInfoFromGPA(
 );
 
 //
-// Patch vid.sys driver. Can be used for ReadInterfaceVidDll access method. For testing purposes only.
+//Next functions are wrappers for non-C languages
 //
 
-FUNCTION_TYPE
-BOOLEAN SdkHvmmPatchPsGetCurrentProcess(
-    _In_ ULONG64 VmwpPid,  //Pid of vmwp.exe
-    _In_ ULONG64 ParentProcessPid //PID of LiveCloudKd.exe (NULL) or other process: kd.exe, for instance
+//
+//Enumerate active Hyper-V partitions, table of handle is returned
+//
+
+FUNCTION_TYPE PULONG64 SdkGetPartitionsHandle(_Inout_ PULONG PartitionTableCount,	_In_ READ_MEMORY_METHOD Method,	_In_ BOOLEAN LoadDriver);
+
+//
+//Get information form Partition object, using handle
+//
+
+FUNCTION_TYPE BOOLEAN SdkQueryInformation(
+	_In_ ULONG64 PartitionIntHandle,
+	_In_ HVDD_INFORMATION_CLASS HvddInformationClass,
+	_Inout_ PVOID HvddInformation
 );
+
+//
+//Handle wrappers for known function
+//
+
+FUNCTION_TYPE BOOLEAN SdkFillHvddPartitionStructureHandle(_In_ ULONG64 PartitionIntHandle);
+FUNCTION_TYPE BOOLEAN SdkHvmmReadPhysicalMemoryHandle(_In_ ULONG64 PartitionIntHandle, _In_ MB_PAGE_INDEX StartPosition, _In_ UINT64 ReadByteCount, _Inout_ PVOID ClientBuffer, _In_ READ_MEMORY_METHOD Method);
+FUNCTION_TYPE BOOLEAN SdkMmReadVirtualAddressHandle(_In_ ULONG64 PartitionIntHandle, _In_ ULONG64 Va, _Out_ PVOID Buffer, _In_ ULONG Size);
+FUNCTION_TYPE BOOLEAN SdkControlVmStateHandle(_In_ ULONG64 PartitionIntHandle, _In_ VM_STATE_ACTION Action, _In_ SUSPEND_RESUME_METHOD ActionMethod);
 
 //
 // Restore patch vid.sys driver. Can be used for ReadInterfaceVidDll access method. For testing purposes only.
@@ -204,26 +298,18 @@ FUNCTION_TYPE
 BOOLEAN	SdkHvmmRestorePsGetCurrentProcess();
 
 //
-// Get friendly name of virtual machine partition object. For Full VM it equivalent for VM name. For WDAG and Windows Sandbox - 'Virtual machine'
+// Patch vid.sys driver. Can be used for ReadInterfaceVidDll access method. For testing purposes only.
 //
 
 FUNCTION_TYPE
-BOOLEAN
-SdkHvmmGetPartitionFriendlyName(
-    _Inout_ PHVDD_PARTITION PartitionEntry,
-    _In_ HANDLE PartitionHandle
+BOOLEAN SdkHvmmPatchPsGetCurrentProcess(
+	_In_ ULONG64 VmwpPid,  //Pid of vmwp.exe
+	_In_ ULONG64 ParentProcessPid //PID of LiveCloudKd.exe (NULL) or other process: kd.exe, for instance
 );
 
-//
-// Query internal information from vid.sys using hvmm.sys driver
-//
 
-FUNCTION_TYPE
-BOOLEAN
-SdkHvmmVidQueryInformation(
-	_In_ PHVDD_PARTITION PartitionEntry,
-    _In_ VID_INFORMATION_CLASS VidInformationClass,
-    _Out_ PVOID VidInformation
-);
-
+#ifdef __cplusplus
+};
 #endif
+
+#endif //#ifndef __SDKPUBLIC_H__

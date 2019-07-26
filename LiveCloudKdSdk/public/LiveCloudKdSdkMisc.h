@@ -30,14 +30,15 @@ typedef enum _MACHINE_TYPE {
 typedef struct _EXCALIBUR_DATA {
 	ULONG     MachineType;
 	ULONG     NtVersion;
-	ULONG     MajorVersion;
-	ULONG     MinorVersion;
+	ULONG     NtMajorVersion;
+	ULONG     NtMinorVersion;
 	ULONG     NtBuildNumber;
 	ULONG64   NtBuildNumberVA;
 	ULONGLONG DirectoryTableBase;
 	BOOL      PaeEnabled;
 
 	ULONGLONG KernelBase;
+	ULONGLONG KdVersionBlock;
 	ULONG     SizeOfKernelImage;
 	GUID      KernelGuid;
 
@@ -45,8 +46,10 @@ typedef struct _EXCALIBUR_DATA {
 	PKDDEBUGGER_DATA64 KdDebuggerDataBlock;
 
 	ULONGLONG KiProcessorBlock;
+	ULONG64 KPCRVa[MAX_PROCESSORS];
 
 	ULONG     NumberProcessors;
+	//PVOID     VmwpNtDllBase;
 
 	ULONGLONG MmPfnDatabase;
 	ULONGLONG PsLoadedModuleList;
@@ -62,7 +65,6 @@ typedef struct _EXCALIBUR_DATA {
 	ULONG64 NumberOfRuns;
 	ULONG64 NumberOfPages;
 	CHAR KdDebuggerDataBlockBlock[KD_DEBUGGER_BLOCK_PAGE_SIZE];
-	//CHAR RunsBlock[MAX_NUMBER_OF_RUNS_BYTES];
 	PHYSICAL_MEMORY_RUN Run[MAX_NUMBER_OF_RUNS_BYTES];
 } EXCALIBUR_DATA, *PEXCALIBUR_DATA;
 
@@ -71,25 +73,59 @@ typedef enum _VID_INFORMATION_CLASS {
 	VidMbBlockInfo,                  //0
 } VID_INFORMATION_CLASS;
 
+typedef enum _HVDD_INFORMATION_CLASS {
+	HvddKdbgData,					//0. Return pointer to PKDDEBUGGER_DATA64
+	HvddPartitionFrienldyName,		//1. Return pointer to WCHAR Partition friendly name
+	HvddPartitionId,				//2. Return pointer to ULONG64 PartitionId
+	HvddVmtypeString,				//3. Return pointer to WCHAR VmTypeString
+	HvddStructure,					//4. Return pointer to PHVDD_PARTITION
+	HvddKiProcessorBlock,			//5. Return pointer to ULONG64 PHVDD_PARTITION-EXCALIBUR_DATA.KiProcessorBlock
+	HvddMmMaximumPhysicalPage		//6. Return pointer to ULONG64 PHVDD_PARTITION-EXCALIBUR_DATA.MmMaximumPhysicalPage
+} HVDD_INFORMATION_CLASS;
+
+typedef enum _VM_STATE_ACTION {
+	SuspendVm,
+	ResumeVm
+} VM_STATE_ACTION;
+
+typedef enum _SUSPEND_RESUME_METHOD {
+	SuspendResumePowershell,
+	SuspendResumeWriteSpecRegister
+} SUSPEND_RESUME_METHOD;
+
 typedef enum _WRITE_MEMORY_METHOD {
 	WriteInterfaceWinHv,                 //0
 	WriteInterfaceHvmmDrvInternal,		 //1
 	WriteInterfaceVidDll,				 //2
-	WriteInterfaceUnsupported			 //3
+	WriteInterfaceVidAux,				 //4
+	WriteInterfaceUnsupported			 //5
 } WRITE_MEMORY_METHOD;
 
 typedef enum _READ_MEMORY_METHOD {
 	ReadInterfaceWinHv,                  //0
 	ReadInterfaceHvmmDrvInternal,		 //1
 	ReadInterfaceVidDll,				 //2
-	ReadInterfaceUnsupported			 //3
+	ReadInterfaceVidAux,				 //3
+	ReadInterfaceUnsupported			 //4
 } READ_MEMORY_METHOD;
+
+typedef enum _USR_VM_TYPE {
+	UsrVidVmTypeUnknown = 0,
+	UsrVidVmTypeContainer = 1,
+	UsrVidVmTypeFullWin10VM = 2,
+	UsrVidVmTypeFullWinSrvVMSecure = 3,
+	UsrVidVmTypeFullWinSrvVM = 4,
+	UsrVidVmTypeDockerHyperVContainerUserName = 5,
+	UsrVidVmTypeDockerHyperVContainerGUID = 6,
+	UsrVidVmTypeLinuxContainer = 7
+} USR_VM_TYPE;
 
 typedef struct _REGISTER_VP_INFO {
 	ULONG64 PartitionId;
 	HV_VP_INDEX VpIndex;
 	HV_REGISTER_NAME RegisterCode;
-} REGISTER_VP_INFO, *PREGISTER_VP_INFO;
+	HV_REGISTER_VALUE RegisterValue;
+} REGISTER_VP_INFO, * PREGISTER_VP_INFO;
 
 typedef struct _TRANSLATE_VA_INFO {
 	ULONG64 PartitionId;
@@ -106,6 +142,7 @@ typedef struct _TRANSLATE_VA_RESULT {
 typedef struct _VID_VM_INFO {
 	WCHAR FriendlyName[VID_PARTITION_FRIENDLY_NAME_MAX];
 	HV_PARTITION_ID PartitionId;
+	USR_VM_TYPE VmType;
 } VID_VM_INFO, *PVID_VM_INFO;
 
 typedef struct _GPAR_BLOCK_INFO {
@@ -126,9 +163,13 @@ typedef struct _HVDD_MEMORY_BLOCK {
 typedef struct _HVDD_PARTITION {
 	HANDLE PartitionHandle;
 	HANDLE WorkerHandle;
+	HANDLE OriginalVidPartitionHandle;
+	ULONG64 HvddHandle;
+	BOOLEAN FillSuccess;
 	ULONG WorkerPid;
 	ULONG CurrentProcess;
 	VID_VM_INFO VidVmInfo;
+	WCHAR VmTypeString[50];
 	ULONG MemoryBlockCount;
 	ULONG MainMemoryBlockIndex;
 	PHVDD_MEMORY_BLOCK MemoryBlockTable;

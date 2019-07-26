@@ -15,9 +15,10 @@ Author:
     Hypervisor Engineering Team (hvet) 01-May-2005
 
 --*/
-#include <emmintrin.h>  
 #if !defined(_HVGDK_)
 #define _HVGDK_
+
+#include <emmintrin.h>  
 
 #if _MSC_VER > 1000
 #pragma once
@@ -2521,7 +2522,7 @@ typedef UINT64 HV_FLUSH_FLAGS, *PHV_FLUSH_FLAGS;
 
 typedef UINT64 HV_TRANSLATE_GVA_CONTROL_FLAGS, *PHV_TRANSLATE_GVA_CONTROL_FLAGS;
 
-typedef enum {
+typedef enum _HV_TRANSLATE_GVA_RESULT_CODE {
 	HvTranslateGvaSuccess = 0, // Translation failures 
 	HvTranslateGvaPageNotPresent = 1,
 	HvTranslateGvaPrivilegeViolation = 2,
@@ -2533,25 +2534,25 @@ typedef enum {
 	HvTranslateGvaGpaNoWriteAccess = 6,
 	HvTranslateGvaGpaIllegalOverlayAccess = 7,
 	HvTranslateGvaIntercept = 8
-} HV_TRANSLATE_GVA_RESULT_CODE;
+} HV_TRANSLATE_GVA_RESULT_CODE, * PHV_TRANSLATE_GVA_RESULT_CODE;
 
-typedef enum _HV_TRANSLATE_GVA_RESULT_CODE
-{
-	WHvTranslateGvaResultSuccess = 0,
-
-	// Translation failures
-	WHvTranslateGvaResultPageNotPresent = 1,
-	WHvTranslateGvaResultPrivilegeViolation = 2,
-	WHvTranslateGvaResultInvalidPageTableFlags = 3,
-
-	// GPA access failures
-	WHvTranslateGvaResultGpaUnmapped = 4,
-	WHvTranslateGvaResultGpaNoReadAccess = 5,
-	WHvTranslateGvaResultGpaNoWriteAccess = 6,
-	WHvTranslateGvaResultGpaIllegalOverlayAccess = 7,
-	WHvTranslateGvaResultIntercept = 8
-
-} HV_TRANSLATE_GVA_RESULT_CODE, *PHV_TRANSLATE_GVA_RESULT_CODE;
+//typedef enum _HV_TRANSLATE_GVA_RESULT_CODE
+//{
+//	WHvTranslateGvaResultSuccess = 0,
+//
+//	// Translation failures
+//	WHvTranslateGvaResultPageNotPresent = 1,
+//	WHvTranslateGvaResultPrivilegeViolation = 2,
+//	WHvTranslateGvaResultInvalidPageTableFlags = 3,
+//
+//	// GPA access failures
+//	WHvTranslateGvaResultGpaUnmapped = 4,
+//	WHvTranslateGvaResultGpaNoReadAccess = 5,
+//	WHvTranslateGvaResultGpaNoWriteAccess = 6,
+//	WHvTranslateGvaResultGpaIllegalOverlayAccess = 7,
+//	WHvTranslateGvaResultIntercept = 8
+//
+//} HV_TRANSLATE_GVA_RESULT_CODE, *PHV_TRANSLATE_GVA_RESULT_CODE;
 //
 //typedef union _HV_TRANSLATE_GVA_RESULT
 //{
