@@ -7,12 +7,6 @@ extern "C" {
 
 #define DLLEXPORT       __declspec(dllexport)
 
-#ifdef LIVECLOUDKDSDK_EXPORTS
-	#define FUNCTION_TYPE DLLEXPORT
-#else
-    #define FUNCTION_TYPE DECLSPEC_IMPORT
-#endif
-
 #include <windows.h>      
 #include <stdio.h>
 //#include <wdbgexts.h>
@@ -20,9 +14,9 @@ extern "C" {
 #include <tlhelp32.h> //EPROCESS defs
 #include <stdlib.h> //intrinsic functions
 
-
 #include "HyperV/vid.h"
 #include "LiveCloudKdSdkMisc.h"
+#include "LiveCloudKdSdkHandle.h"
 
 
 //
@@ -260,35 +254,6 @@ FUNCTION_TYPE
 BOOLEAN SdkHvmmGetMemoryBlockInfoFromGPA(
     _Inout_ PGPAR_BLOCK_INFO pBlockIndexInfo
 );
-
-//
-//Next functions are wrappers for non-C languages
-//
-
-//
-//Enumerate active Hyper-V partitions, table of handle is returned
-//
-
-FUNCTION_TYPE PULONG64 SdkGetPartitionsHandle(_Inout_ PULONG PartitionTableCount,	_In_ READ_MEMORY_METHOD Method,	_In_ BOOLEAN LoadDriver);
-
-//
-//Get information form Partition object, using handle
-//
-
-FUNCTION_TYPE BOOLEAN SdkQueryInformation(
-	_In_ ULONG64 PartitionIntHandle,
-	_In_ HVDD_INFORMATION_CLASS HvddInformationClass,
-	_Inout_ PVOID HvddInformation
-);
-
-//
-//Handle wrappers for known function
-//
-
-FUNCTION_TYPE BOOLEAN SdkFillHvddPartitionStructureHandle(_In_ ULONG64 PartitionIntHandle);
-FUNCTION_TYPE BOOLEAN SdkHvmmReadPhysicalMemoryHandle(_In_ ULONG64 PartitionIntHandle, _In_ MB_PAGE_INDEX StartPosition, _In_ UINT64 ReadByteCount, _Inout_ PVOID ClientBuffer, _In_ READ_MEMORY_METHOD Method);
-FUNCTION_TYPE BOOLEAN SdkMmReadVirtualAddressHandle(_In_ ULONG64 PartitionIntHandle, _In_ ULONG64 Va, _Out_ PVOID Buffer, _In_ ULONG Size);
-FUNCTION_TYPE BOOLEAN SdkControlVmStateHandle(_In_ ULONG64 PartitionIntHandle, _In_ VM_STATE_ACTION Action, _In_ SUSPEND_RESUME_METHOD ActionMethod);
 
 //
 // Restore patch vid.sys driver. Can be used for ReadInterfaceVidDll access method. For testing purposes only.

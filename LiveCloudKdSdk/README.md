@@ -33,7 +33,7 @@ for all project, but method can be specified during SdkHvmmReadVmMemory call
     Partitions = SdkGetPartitions(&PartitionCount, g_MemoryInterfaceType);
 
 2. Next call SdkFillHvddPartitionStructure(&Partitions[VmId])) with selected partition object as parameter
-3. Use Sdk functions, which you need (see LiveCloudKdSdkPublic.h for description)
+3. Use Sdk functions, which you need (see LiveCloudKdSdkPublic.h for description). Use LiveCloudKdSdkPublicHandle.h for more simple type functions. See LiveCloudKdExample Demo2 for more detailes.
 4. Call SdkDestroyPartitions(), when your program is closing.
 
 
@@ -571,7 +571,7 @@ Same functionality as function without handle postfix
 
 PULONG64 SdkGetPartitionsHandle(_Inout_ PULONG PartitionTableCount,	_In_ READ_MEMORY_METHOD Method,	_In_ BOOLEAN LoadDriver);
 BOOLEAN SdkFillHvddPartitionStructureHandle(_In_ ULONG64 PartitionIntHandle);
-BOOLEAN SdkHvmmReadPhysicalMemoryHandle(_In_ ULONG64 PartitionIntHandle, _In_ MB_PAGE_INDEX StartPosition, _In_ UINT64 ReadByteCount, _Inout_ PVOID ClientBuffer, _In_ READ_MEMORY_METHOD Method);
+BOOLEAN SdkHvmmReadPhysicalMemoryHandle(_In_ ULONG64 PartitionIntHandle, _In_ UINT64 StartPosition, _In_ UINT64 ReadByteCount, _Inout_ PVOID ClientBuffer, _In_ READ_MEMORY_METHOD Method);
 BOOLEAN SdkMmReadVirtualAddressHandle(_In_ ULONG64 PartitionIntHandle, _In_ ULONG64 Va, _Out_ PVOID Buffer, _In_ ULONG Size);
 BOOLEAN SdkControlVmStateHandle(_In_ ULONG64 PartitionIntHandle, _In_ VM_STATE_ACTION Action, _In_ SUSPEND_RESUME_METHOD ActionMethod);
 
