@@ -43,14 +43,22 @@ Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the ex
 
 ## LiveCloudKd (2019). Still beta stage!!
 
-Add new methods for access guest Hyper-V VM Memory: ReadInterfaceWinHv (uses Hyper-V hypercall for reading. Slow, but robust method) and ReadInterfaceHvmmDrvInternal (read data directly in kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading memthod is ReadInterfaceHvmmDrvInternal.
-ReadInterfaceHvmmDrvInternal was tested in Windows Server 2019 (march 2019 updates), Windows 10 x64 1803, 1809, 18362
-Tested on Full VM, Windows Defender Application Guard and Windows Sanbox from 18362
+Added new methods for accessing guest Hyper-V VM Memory: 
+
+	ReadInterfaceWinHv - uses Hyper-V hypercall for reading guest OS memory. Slow, but robust method; 
+	ReadInterfaceHvmmDrvInternal - read data directly from kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading method is ReadInterfaceHvmmDrvInternal.
+	ReadInterfaceVidAux - uses vidaux.dll library, which must be injected in vmwp.exe process, for access to Microsoft vid.dll API.
+	
+	WriteInterfaceWinHv - uses Hyper-V hypercall for writing to guest OS memory. Use EXDi interface for it (/x or /w options). See ExdiKdSample README for more details.
+	
+ReadInterfaceHvmmDrvInternal was tested in Windows Server 2019 (july 2019 updates), Windows 10 x64 1803, 1809, 18362
+
+Tested on Full VM, Windows Defender Application Guard and Windows Sandbox in Windows 10 18362.
 
 For launch:
-1. hvmm.sys driver is not signed, therefor start host OS with TESTSIGNING option (Bcdedit /set TESTSIGNING ON)
-2. Place LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 and WDK 1903)
-3. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe)
-4. Choose virtual machine (it can be Full Vm or Hyper-V container) for attaching
+1. hvmm.sys driver is not signed, therefore start host OS with TESTSIGNING option (Bcdedit /set TESTSIGNING ON).
+2. Place LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys, vidaux.dll, ExdiKdSample.dll to WinDBG x64 folder (tested on WinDBG from WDK 1809 and WDK 1903).
+3. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe).
+4. Choose virtual machine (it can be Full Vm or Hyper-V container) for attaching.
 	
 
