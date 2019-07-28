@@ -80,9 +80,10 @@ LaunchWinDbgX(PHVDD_PARTITION PartitionEntry)
 
 	lstrcatW(ApplicationName, L"WinDBGX.exe");
 	swprintf_s(CommandLine, sizeof(CommandLine) / sizeof(CommandLine[0]),
-		L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld", KdVersionBlock);
+		L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=Guess");
+		//L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld", KdVersionBlock);
 
-	wprintf(L"WinDBGX cmd launching with EXDi parameter doesn't work still. Until it will be fixed, paste text from next line to WinDBGX kernel debugging EXDi tab:\nCLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld \n", KdVersionBlock);
+	wprintf(L"WinDBGX cmd launching with EXDi parameter doesn't work still. Until it will be fixed, paste text from next line to WinDBGX kernel debugging EXDi tab:\nCLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=Guess\n");
 
 	EXDiRegistration();
 
@@ -130,7 +131,8 @@ LaunchWinDbg(PHVDD_PARTITION PartitionEntry)
 
 	lstrcatW(ApplicationName, L"\\windbg.exe");
 	swprintf_s(CommandLine, sizeof(CommandLine) / sizeof(CommandLine[0]),
-		L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld", KdVersionBlock);
+		L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=Guess");
+	//L"-v -kx exdi:CLSID={53838F70-0936-44A9-AB4E-ABB568401508},Kd=VerAddr:%lld", KdVersionBlock);
 
 	EXDiRegistration();
 
