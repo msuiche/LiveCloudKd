@@ -9,6 +9,6 @@ Demo project with next functions of LiveCloudKdSdk:
 - dump VM to file
 
 Demo1 function uses full PHVDD_PARTITION structure for working with partition.
-Demo2 using more simple HANDLE struct for using with non-C languages. (ULONG, PVOID, WCHAR types only).
+Demo2 using more simple HANDLE structures for using with non-C languages. (ULONG, PVOID, WCHAR types only). For using it include LiveCloudKdSdkHandle.h instead LiveCloudKdSdkPublic.h in your project.
 
 ![](./images/Demo.png)
