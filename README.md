@@ -48,7 +48,7 @@ Added new methods for accessing guest Hyper-V VM Memory:
 	ReadInterfaceWinHv - uses Hyper-V hypercall for reading guest OS memory. Slow, but robust method; 
 	ReadInterfaceHvmmDrvInternal - read data directly from kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading method is ReadInterfaceHvmmDrvInternal.
 	ReadInterfaceVidAux - uses vidaux.dll library, which must be injected in vmwp.exe process, for access to Microsoft vid.dll API.
-	ReadInterfaceVidNative - uses native vid.dll without driver. Can be used for Windows Server 2012\2012 R2\2016 Hyper-V.
+	ReadInterfaceVidNative - uses native vid.dll without driver. Can be used for Windows Server 2012\2012 R2\2016 Hyper-V. 
 	
 	WriteInterfaceWinHv - uses Hyper-V hypercall for writing to guest OS memory. Use EXDi interface for it (/x or /w options). See ExdiKdSample README for more details.
 	
