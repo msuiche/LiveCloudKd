@@ -1,0 +1,175 @@
+Microsoft (R) COFF/PE Dumper Version 14.14.26429.4
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file D:\Project\hyperv60\Win1017666\winhvr.sys
+
+File Type: EXECUTABLE IMAGE
+
+  Section contains the following exports for winhvr.sys
+
+    00000000 characteristics
+     74A27C5 time date stamp
+        0.00 version
+           1 ordinal base
+         141 number of functions
+         141 number of names
+
+    ordinal hint RVA      name
+
+          1    0 00018380 DllInitialize = DllInitialize
+          2    1 00015760 DllUnload = DllUnload
+          3    2 000183D0 DriverEntry = DriverEntry
+          4    3 00001880 WinHvAcceptGpaPages = WinHvAcceptGpaPages
+          5    4 00001930 WinHvAcquireSparseGpaPageHostAccess = WinHvAcquireSparseGpaPageHostAccess
+          6    5 000019C0 WinHvAcquireSparseSpaPageHostAccess = WinHvAcquireSparseSpaPageHostAccess
+          7    6 00004B10 WinHvAddLogicalProcessor = WinHvAddLogicalProcessor
+          8    7 00007090 WinHvAllocateOverlayPages = WinHvAllocateOverlayPages
+          9    8 00007530 WinHvAllocatePartitionSintIndex = WinHvAllocatePartitionSintIndex
+         10    9 00013880 WinHvAllocatePortId = WinHvAllocatePortId
+         11    A 000077C0 WinHvAllocateSingleSintIndex = WinHvAllocateSingleSintIndex
+         12    B 000023B0 WinHvAssertDeviceInterrupt = WinHvAssertDeviceInterrupt
+         13    C 000079D0 WinHvAssertVirtualInterrupt = WinHvAssertVirtualInterrupt
+         14    D 00004700 WinHvAttachDevice = WinHvAttachDevice
+         15    E 00007BE0 WinHvCancelTimer = WinHvCancelTimer
+         16    F 00009010 WinHvCancelVpDispatchLoop = WinHvCancelVpDispatchLoop
+         17   10 00004450 WinHvCheckForIoIntercept = WinHvCheckForIoIntercept
+         18   11 00001A40 WinHvCheckSparseGpaPageVtlAccess = WinHvCheckSparseGpaPageVtlAccess
+         19   12 00007A70 WinHvClearVirtualInterrupt = WinHvClearVirtualInterrupt
+         20   13 00004500 WinHvCompleteIntercept = WinHvCompleteIntercept
+         21   14 000063B0 WinHvConfigureProfiler = WinHvConfigureProfiler
+         22   15 00007AA0 WinHvConfigureVirtualInterruptLine = WinHvConfigureVirtualInterruptLine
+         23   16 00007170 WinHvConnectPort = WinHvConnectPort
+         24   17 00004090 WinHvCreateCpuGroup = WinHvCreateCpuGroup
+         25   18 00006430 WinHvCreateEventLogBuffer = WinHvCreateEventLogBuffer
+         26   19 000132C0 WinHvCreatePartition = WinHvCreatePartition
+         27   1A 00007230 WinHvCreatePort = WinHvCreatePort
+         28   1B 00015550 WinHvCreateTimer = WinHvCreateTimer
+         29   1C 000081D0 WinHvCreateVp = WinHvCreateVp
+         30   1D 00004170 WinHvDeleteCpuGroup = WinHvDeleteCpuGroup
+         31   1E 00006490 WinHvDeleteEventLogBuffer = WinHvDeleteEventLogBuffer
+         32   1F 00013500 WinHvDeletePartition = WinHvDeletePartition
+         33   20 00007300 WinHvDeletePort = WinHvDeletePort
+         34   21 000155E0 WinHvDeleteTimer = WinHvDeleteTimer
+         35   22 00008280 WinHvDeleteVp = WinHvDeleteVp
+         36   23 00013B70 WinHvDepositMemory = WinHvDepositMemory
+         37   24 000060B0 WinHvDepositMemoryFromMdl = WinHvDepositMemoryFromMdl
+         38   25 000047A0 WinHvDetachDevice = WinHvDetachDevice
+         39   26 000089D0 WinHvDisablePartitionVtl = WinHvDisablePartitionVtl
+         40   27 00008A40 WinHvDisableVpVtl = WinHvDisableVpVtl
+         41   28 00007330 WinHvDisconnectPort = WinHvDisconnectPort
+         42   29 00008AC0 WinHvEnablePartitionVtl = WinHvEnablePartitionVtl
+         43   2A 00008B20 WinHvEnableVpVtl = WinHvEnableVpVtl
+         44   2B 000064C0 WinHvFinalizeEventLogBufferGroup = WinHvFinalizeEventLogBufferGroup
+         45   2C 00005110 WinHvFinalizePartition = WinHvFinalizePartition
+         46   2D 00001650 WinHvFlushEventLogBuffer = WinHvFlushEventLogBuffer
+         47   2E 000061A0 WinHvForceSmallPages = WinHvForceSmallPages
+         48   2F 00007150 WinHvFreeOverlayPages = WinHvFreeOverlayPages
+         49   30 00014CE0 WinHvFreePartitionSintIndex = WinHvFreePartitionSintIndex
+         50   31 00013AC0 WinHvFreePortId = WinHvFreePortId
+         51   32 00014E30 WinHvFreeSingleSintIndex = WinHvFreeSingleSintIndex
+         52   33 000041A0 WinHvGetCpuGroupAffinity = WinHvGetCpuGroupAffinity
+         53   34 00004280 WinHvGetCpuGroupProperty = WinHvGetCpuGroupProperty
+         54   35 000082F0 WinHvGetCurrentVpIndex = WinHvGetCurrentVpIndex
+         55   36 00004B60 WinHvGetLogicalProcessorProperty = WinHvGetLogicalProcessorProperty
+         56   37 00004C50 WinHvGetLogicalProcessorRegisters = WinHvGetLogicalProcessorRegisters
+         57   38 00004CB0 WinHvGetLogicalProcessorRunTime = WinHvGetLogicalProcessorRunTime
+         58   39 000061B0 WinHvGetMemoryBalance = WinHvGetMemoryBalance
+         59   3A 00005220 WinHvGetNextChildPartition = WinHvGetNextChildPartition
+         60   3B 00004300 WinHvGetNextCpuGroup = WinHvGetNextCpuGroup
+         61   3C 00004370 WinHvGetNextCpuGroupPartition = WinHvGetNextCpuGroupPartition
+         62   3D 00001010 WinHvGetNextQueuedPort = WinHvGetNextQueuedPort
+         63   3E 000052A0 WinHvGetPartitionId = WinHvGetPartitionId
+         64   3F 00005320 WinHvGetPartitionProperty = WinHvGetPartitionProperty
+         65   40 00007360 WinHvGetPortProperty = WinHvGetPortProperty
+         66   41 00007AB0 WinHvGetSintEventFlags = WinHvGetSintEventFlags
+         67   42 00007AF0 WinHvGetSintMessage = WinHvGetSintMessage
+         68   43 000087D0 WinHvGetSystemInformation = WinHvGetSystemInformation
+         69   44 00001730 WinHvGetVpRegisters = WinHvGetVpRegisters
+         70   45 000064F0 WinHvInitializeEventLogBufferGroup = WinHvInitializeEventLogBufferGroup
+         71   46 00008350 WinHvInjectSyntheticMachineCheckEvent = WinHvInjectSyntheticMachineCheckEvent
+         72   47 00004510 WinHvInstallIntercept = WinHvInstallIntercept
+         73   48 000010F0 WinHvLookupPortId = WinHvLookupPortId
+         74   49 000050C0 WinHvLowMemoryPolicyAutoDeposit = WinHvLowMemoryPolicyAutoDeposit
+         75   4A 00005100 WinHvLowMemoryPolicyReturnStatus = WinHvLowMemoryPolicyReturnStatus
+         76   4B 000047E0 WinHvMapDeviceInterrupt = WinHvMapDeviceInterrupt
+         77   4C 000048B0 WinHvMapDeviceInterruptEx = WinHvMapDeviceInterruptEx
+         78   4D 00006590 WinHvMapEventLogBuffer = WinHvMapEventLogBuffer
+         79   4E 000035F0 WinHvMapGpaPages = WinHvMapGpaPages
+         80   4F 00003650 WinHvMapGpaPagesFromMbpArray = WinHvMapGpaPagesFromMbpArray
+         81   50 00001AE0 WinHvMapGpaPagesFromMbpArrayScanLargePages = WinHvMapGpaPagesFromMbpArrayScanLargePages
+         82   51 00001B20 WinHvMapGpaPagesScanLargePages = WinHvMapGpaPagesScanLargePages
+         83   52 000036E0 WinHvMapGpaPagesSpecial = WinHvMapGpaPagesSpecial
+         84   53 00003720 WinHvMapSparseGpaPages = WinHvMapSparseGpaPages
+         85   54 00014090 WinHvMapStatsPage = WinHvMapStatsPage
+         86   55 00003850 WinHvModifySparseGpaPages = WinHvModifySparseGpaPages
+         87   56 000038D0 WinHvModifySparseGpaPagesFromMbpArray = WinHvModifySparseGpaPagesFromMbpArray
+         88   57 00003950 WinHvModifyVtlProtectionMask = WinHvModifyVtlProtectionMask
+         89   58 00001B60 WinHvModifyVtlProtectionMaskRange = WinHvModifyVtlProtectionMaskRange
+         90   59 00006040 WinHvNotifyStandbyTransition = WinHvNotifyStandbyTransition
+         91   5A 000083A0 WinHvNtProcessorToVpIndex = WinHvNtProcessorToVpIndex
+         92   5B 000073F0 WinHvPostMessage = WinHvPostMessage
+         93   5C 00003A90 WinHvPrecommitGpaPages = WinHvPrecommitGpaPages
+         94   5D 00004D50 WinHvProcessorIndexToLpIndex = WinHvProcessorIndexToLpIndex
+         95   5E 00008400 WinHvProcessorNumberToVpIndex = WinHvProcessorNumberToVpIndex
+         96   5F 000053A0 WinHvQueryInterceptIrql = WinHvQueryInterceptIrql
+         97   60 00007D40 WinHvQueryReferenceCounter = WinHvQueryReferenceCounter
+         98   61 00001BF0 WinHvQueryVtlProtectionMaskRange = WinHvQueryVtlProtectionMaskRange
+         99   62 00003B80 WinHvReadGpa = WinHvReadGpa
+        100   63 00004560 WinHvRegisterInterceptResult = WinHvRegisterInterceptResult
+        101   64 00006660 WinHvReleaseEventLogBuffer = WinHvReleaseEventLogBuffer
+        102   65 00001C80 WinHvReleaseSparseGpaPageHostAccess = WinHvReleaseSparseGpaPageHostAccess
+        103   66 00001D10 WinHvReleaseSparseSpaPageHostAccess = WinHvReleaseSparseSpaPageHostAccess
+        104   67 00004DB0 WinHvRemoveLogicalProcessor = WinHvRemoveLogicalProcessor
+        105   68 00015800 WinHvReportPresentHypervisor = WinHvReportPresentHypervisor
+        106   69 00013E30 WinHvRestorePartitionState = WinHvRestorePartitionState
+        107   6A 000090A0 WinHvRunVpDispatchLoop = WinHvRunVpDispatchLoop
+        108   6B 00013F60 WinHvSavePartitionState = WinHvSavePartitionState
+        109   6C 000053B0 WinHvScrubPartition = WinHvScrubPartition
+        110   6D 00007D70 WinHvSetAbsoluteTimer = WinHvSetAbsoluteTimer
+        111   6E 000043F0 WinHvSetCpuGroupProperty = WinHvSetCpuGroupProperty
+        112   6F 00007B30 WinHvSetEndOfMessage = WinHvSetEndOfMessage
+        113   70 00006690 WinHvSetEventLogCompletedNotificationRoutine = WinHvSetEventLogCompletedNotificationRoutine
+        114   71 000066A0 WinHvSetEventLogGranularSources = WinHvSetEventLogGranularSources
+        115   72 000067E0 WinHvSetEventLogGroupSources = WinHvSetEventLogGroupSources
+        116   73 00008C40 WinHvSetHvDebugProperty = WinHvSetHvDebugProperty
+        117   74 00005410 WinHvSetInterceptRoutine = WinHvSetInterceptRoutine
+        118   75 00004E00 WinHvSetLogicalProcessorProperty = WinHvSetLogicalProcessorProperty
+        119   76 00004ED0 WinHvSetLogicalProcessorRegisters = WinHvSetLogicalProcessorRegisters
+        120   77 000054E0 WinHvSetLowMemoryPolicyRoutine = WinHvSetLowMemoryPolicyRoutine
+        121   78 000055B0 WinHvSetPartitionProperty = WinHvSetPartitionProperty
+        122   79 000074B0 WinHvSetPortProperty = WinHvSetPortProperty
+        123   7A 00013010 WinHvSetSchedulerAssistData = WinHvSetSchedulerAssistData
+        124   7B 00014490 WinHvSetSchedulerNotificationRoutine = WinHvSetSchedulerNotificationRoutine
+        125   7C 00014F40 WinHvSetSint = WinHvSetSint
+        126   7D 00007B70 WinHvSetSintOnCurrentProcessor = WinHvSetSintOnCurrentProcessor
+        127   7E 00007AA0 WinHvSetVirtualInterruptLineState = WinHvConfigureVirtualInterruptLine
+        128   7F 00008450 WinHvSetVpRegisters = WinHvSetVpRegisters
+        129   80 00001680 WinHvSignalEvent = WinHvSignalEvent
+        130   81 00003C50 WinHvTranslateVirtualAddress = WinHvTranslateVirtualAddress
+        131   82 00003D10 WinHvUncommitGpaPages = WinHvUncommitGpaPages
+        132   83 00004AC0 WinHvUnmapDeviceInterrupt = WinHvUnmapDeviceInterrupt
+        133   84 00006860 WinHvUnmapEventLogBuffer = WinHvUnmapEventLogBuffer
+        134   85 00003D80 WinHvUnmapGpaPages = WinHvUnmapGpaPages
+        135   86 00014280 WinHvUnmapStatsPage = WinHvUnmapStatsPage
+        136   87 000045D0 WinHvUnregisterInterceptResult = WinHvUnregisterInterceptResult
+        137   88 00002EC0 WinHvUpdateHvProcessorFeatures = WinHvUpdateHvProcessorFeatures
+        138   89 00013060 WinHvWaitForInflightVpSignals = WinHvWaitForInflightVpSignals
+        139   8A 00006250 WinHvWithdrawAllMemory = WinHvWithdrawAllMemory
+        140   8B 00013CA0 WinHvWithdrawMemory = WinHvWithdrawMemory
+        141   8C 00003F90 WinHvWriteGpa = WinHvWriteGpa
+
+  Summary
+
+        5000 .data
+        2000 .edata
+        1000 .idata
+        1000 .pdata
+        2000 .rdata
+        1000 .reloc
+        1000 .rsrc
+        8000 .text
+        1000 GFIDS
+        1000 INIT
+        1000 NONPAGED
+        3000 PAGE
