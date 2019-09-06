@@ -149,9 +149,9 @@ BOOLEAN VidIOCTLEnableProcessProtection(PCHAR pBuffer, ULONG len)
 //Get MBlock index in array for vid.dll!VidReadWriteMemoryBlockPageRange
 //
 
-MB_HANDLE VidGetMbBlockIndex(PPARTITION_HANDLE pPartitionHandle, objMBlock_OBJECT MbBlock)
+MB_HANDLE VidGetMbBlockIndex(PVM_PROCESS_CONTEXT pPartitionHandle, PMEMORY_BLOCK MbBlock)
 {
-	objMBlockS_ARRAY objMBlockArray = NULL;
+	PMEMORY_BLOCK_ARRAY objMBlockArray = NULL;
 	PVOID objMBlockAddress = NULL;
 	ULONG64 Index = 0;
 	ULONG64* pBlocks;
@@ -190,7 +190,7 @@ MB_HANDLE VidGetMbBlockIndex(PPARTITION_HANDLE pPartitionHandle, objMBlock_OBJEC
 //Find Gpar block from PARTITION_HANDLE structure for specifica GPA Page
 //
 
-PGPAR_OBJECT VidGetGparObjectForGpa(PPARTITION_HANDLE pPartitionHandle, UINT64 GPA)
+PGPAR_OBJECT VidGetGparObjectForGpa(PVM_PROCESS_CONTEXT pPartitionHandle, UINT64 GPA)
 {
 
 	UINT32 Index = 0;
@@ -250,7 +250,7 @@ PGPAR_OBJECT VidGetGparObjectForGpa(PPARTITION_HANDLE pPartitionHandle, UINT64 G
 //Read memory block from Hyper-V container
 //
 
-BOOLEAN VidGetContainerMemoryBlock(PPARTITION_HANDLE pPartitionHandle, PCHAR pBuffer, ULONG len, ULONG64 GPA)
+BOOLEAN VidGetContainerMemoryBlock(PVM_PROCESS_CONTEXT pPartitionHandle, PCHAR pBuffer, ULONG len, ULONG64 GPA)
 {
 	PGPAR_OBJECT objGpar = NULL;
 	BOOLEAN Ret = FALSE;
@@ -324,9 +324,9 @@ BOOLEAN VidGetContainerMemoryBlock(PPARTITION_HANDLE pPartitionHandle, PCHAR pBu
 //Read memory block from FULL VM
 //
 
-BOOLEAN VidGetFullVmMemoryBlock(PPARTITION_HANDLE pPartitionHandle, PCHAR pBuffer, ULONG len, ULONG64 GPA)
+BOOLEAN VidGetFullVmMemoryBlock(PVM_PROCESS_CONTEXT pPartitionHandle, PCHAR pBuffer, ULONG len, ULONG64 GPA)
 {
-	objMBlock_OBJECT objMBlock = NULL;
+	PMEMORY_BLOCK objMBlock = NULL;
 	PGPAR_OBJECT objGpar = NULL;
 
 	ULONG64 HostSPA = 0;
@@ -406,7 +406,7 @@ BOOLEAN VidGetFullVmMemoryBlock(PPARTITION_HANDLE pPartitionHandle, PCHAR pBuffe
 //
 
 
-PVOID VidFindVmmemHandle(PPARTITION_HANDLE pHandle)
+PVOID VidFindVmmemHandle(PVM_PROCESS_CONTEXT pHandle)
 {
 	ULONG i = 0;
 	PULONG pPartitiionArea = (PULONG) pHandle;
@@ -435,7 +435,7 @@ BOOLEAN VidInternalReadMemory(PCHAR pBuffer, ULONG len)
 	GPA_INFO GpaInfo;
 	NTSTATUS Status;
 	PFILE_OBJECT objVmPartition;
-	PPARTITION_HANDLE pPartitionHandle;
+	PVM_PROCESS_CONTEXT pPartitionHandle;
 	//PGPAR_ELEMENT pGparElement = NULL;
 	UINT64 GPA;
 	BOOLEAN Ret = FALSE;
@@ -466,7 +466,7 @@ BOOLEAN VidInternalReadMemory(PCHAR pBuffer, ULONG len)
 
 	if (objVmPartition->FsContext != NULL)
 	{
-		pPartitionHandle = (PPARTITION_HANDLE)((PCHAR)objVmPartition->FsContext - 1);
+		pPartitionHandle = (PVM_PROCESS_CONTEXT)((PCHAR)objVmPartition->FsContext - 1);
 
 		switch (pPartitionHandle->VmType)
 		{
@@ -505,10 +505,10 @@ BOOLEAN VidGetMBlockInfo(PCHAR pBuffer, ULONG len)
 	PFILE_OBJECT objVmPartition;
     NTSTATUS Status;
     PPARTITION_INFO pPartitionInfo;
-    PPARTITION_HANDLE pPartitionHandle;
+    PVM_PROCESS_CONTEXT pPartitionHandle;
 	ULONG64 i;
-	objMBlockS_ARRAY objMBlockArray;
-	objMBlock_OBJECT objMBlock;
+	PMEMORY_BLOCK_ARRAY objMBlockArray;
+	PMEMORY_BLOCK objMBlock;
 
     pPartitionInfo = (PPARTITION_INFO)pBuffer;
     
@@ -526,8 +526,8 @@ BOOLEAN VidGetMBlockInfo(PCHAR pBuffer, ULONG len)
     }
     if (objVmPartition->FsContext != NULL)
     {
-        pPartitionHandle = (PPARTITION_HANDLE)((PCHAR)objVmPartition->FsContext - 1);
-		objMBlockArray = (objMBlockS_ARRAY) pPartitionHandle->ArrayOfMblocks;
+        pPartitionHandle = (PVM_PROCESS_CONTEXT)((PCHAR)objVmPartition->FsContext - 1);
+		objMBlockArray = (PMEMORY_BLOCK_ARRAY) pPartitionHandle->ArrayOfMblocks;
 
 		if (*(PULONG)objMBlockArray == 0) {
 
@@ -542,7 +542,7 @@ BOOLEAN VidGetMBlockInfo(PCHAR pBuffer, ULONG len)
 
 		for (i = 1; i < objMBlockArray->Count; i++) // start from 2nd element
 		{
-			objMBlock = (objMBlock_OBJECT) *((PULONG64)objMBlockArray + i);
+			objMBlock = (PMEMORY_BLOCK) *((PULONG64)objMBlockArray + i);
 			KDbgLog16("MBlock.BitMapSize ", objMBlock->BitMapSize01);
 		}
     }
@@ -585,7 +585,7 @@ BOOLEAN VidGetGparBlockInfoFromGPA(PCHAR pBuffer, ULONG len)
     PFILE_OBJECT objVmPartition;
 
 	PGPAR_BLOCK_INFO pGparBlockInfo;
-    PPARTITION_HANDLE pPartitionHandle;
+    PVM_PROCESS_CONTEXT pPartitionHandle;
     PGPAR_BLOCK_HANDLE pGparBlockHandle;
     PGPAR_OBJECT pGparElement;
     PUINT64 pGparArray;
@@ -616,7 +616,7 @@ BOOLEAN VidGetGparBlockInfoFromGPA(PCHAR pBuffer, ULONG len)
     }
     if (objVmPartition->FsContext != NULL) 
     {
-        pPartitionHandle = (PPARTITION_HANDLE)((PCHAR)objVmPartition->FsContext - 1);
+        pPartitionHandle = (PVM_PROCESS_CONTEXT)((PCHAR)objVmPartition->FsContext - 1);
 		pGparBlockHandle = pPartitionHandle->pGparBlockHandle;
 
 		if (pGparBlockHandle == 0)
@@ -953,7 +953,7 @@ BOOLEAN VidGetFriendlyPartitionName(PCHAR pBuffer, ULONG len)
     UNICODE_STRING pVmName;
     PVID_VM_INFO pVmInfo;
     PPARTITION_INFO pPartitionInfo;
-	PPARTITION_HANDLE pPartitionHandle = NULL;
+	PVM_PROCESS_CONTEXT pPartitionHandle = NULL;
 
     pPartitionInfo = (PPARTITION_INFO)pBuffer;
     EnumActivePartitionID();
@@ -983,7 +983,7 @@ BOOLEAN VidGetFriendlyPartitionName(PCHAR pBuffer, ULONG len)
 		RtlCopyMemory(pBuffer, ((PCHAR)objVmPartition->FsContext - 1 + PARTITION_NAME_1803_OFFSET), sizeof(pVmInfo->FriendlyName)); // 0x78 - for Windows 10.1803. For Windows 2016 - 0x70 (but still works vid.dll). RtlGetVersion
         RtlCopyMemory(pBuffer+sizeof(pVmInfo->FriendlyName), ((PCHAR)objVmPartition->FsContext - 1 + PARTITION_ID_1803_OFFSET), sizeof(pVmInfo->PartitionId));
         
-		pPartitionHandle = (PPARTITION_HANDLE)((PCHAR)objVmPartition->FsContext - 1);
+		pPartitionHandle = (PVM_PROCESS_CONTEXT)((PCHAR)objVmPartition->FsContext - 1);
 
 		pVmInfo = (PVID_VM_INFO)pBuffer;
 

@@ -177,7 +177,7 @@ typedef struct _PARTITION_INFO {
     VID_INFORMATION_CLASS VidInformationClass;
 } PARTITION_INFO, *PPARTITION_INFO;
 
-typedef struct _MBLOCK_OBJECT {
+typedef struct _MEMORY_BLOCK {
 	CHAR cMblockString[0x8]; // "Mb  " signature
 	PVOID PartitionHandle; // size 0x8
 	CHAR Unknown01[0x8];
@@ -187,7 +187,7 @@ typedef struct _MBLOCK_OBJECT {
 	ULONG64 BitMapSize02; // offset 0x40, size 0x8
 	CHAR Unknown03[0xA8];
 	PULONG64 pGuestGPAArray; //offset 0xF0, size 0x8
-} MBLOCK_OBJECT, *objMBlock_OBJECT;
+} MEMORY_BLOCK, *PMEMORY_BLOCK;
 
 typedef struct _GPAR_OBJECT {
 	CHAR cGparSignature[0x8]; // "GPAR" signature - eq GPA Range
@@ -198,7 +198,7 @@ typedef struct _GPAR_OBJECT {
     UINT64 UnknowParam02;
     UINT32 KernelMemoryBlockGpaRangeFlags; //offset +0x120, size 0x4
 	CHAR Unknown02[0x4C];
-	objMBlock_OBJECT objMBlock; //offset +0x170, size 0x8 //in Windows 10 20H1 up to 0x8 bytes
+	PMEMORY_BLOCK objMBlock; //offset +0x170, size 0x8 //in Windows 10 20H1 up to 0x8 bytes
 	ULONG64 SomeGpaOffset; //offset +0x178, size 0x8
 	ULONG64 VmmMemGpaOffset;//offset +0x180, size 0x8
 } GPAR_OBJECT, *PGPAR_OBJECT;
@@ -211,13 +211,13 @@ typedef struct _GPAR_BLOCK_HANDLE {
 } GPAR_BLOCK_HANDLE, *PGPAR_BLOCK_HANDLE;
 
 
-typedef struct _MBLOCKS_ARRAY {
+typedef struct _MEMORY_BLOCK_ARRAY {
 	ULONG64 Count;
 	PULONG64 ArrayStart; // Start point to block of pointers to MBlock structures
-} MBLOCKS_ARRAY, *objMBlockS_ARRAY;
+} MEMORY_BLOCK_ARRAY, *PMEMORY_BLOCK_ARRAY;
 
 
-typedef struct _PARTITION_HANDLE {
+typedef struct _VM_PROCESS_CONTEXT {
 	CHAR cPrtnSignature[0x8];//Prtn signature
 	CHAR Unknown01[0xF];
 	CHAR IsSecurePartition;//offset +0x18, size 0x1
@@ -227,18 +227,18 @@ typedef struct _PARTITION_HANDLE {
     WCHAR FriendlyName[0x100]; //offset +0x78, size 0x200
     HV_PARTITION_ID PartitionId; // offset +0x278, size 0x8
     CHAR Unknown04[0xF98];
-	objMBlockS_ARRAY ArrayOfMblocks;//offset +0x1218, size 0x8
+	PMEMORY_BLOCK_ARRAY ArrayOfMblocks;//offset +0x1218, size 0x8
     CHAR Unknown05[0x300];
     PGPAR_BLOCK_HANDLE pGparBlockHandle; // offset +0x1520, size 0x8
 	//CHAR Unknown04[0x27C0];
 	CHAR Unknown06[0x1570];
-	objMBlockS_ARRAY ArrayOfMblocks20H1;//offset +0x2A98, size 0x8
+	PMEMORY_BLOCK_ARRAY ArrayOfMblocks20H1;//offset +0x2A98, size 0x8
 	CHAR Unknown07[0x300];
 	PGPAR_BLOCK_HANDLE pGparBlockHandle20H1; // offset +0x2DA0, size 0x8
 	//HANDLE hVmmemHandle; //offset +0x3ÑE8, size 0x8 P.S. 0x3CC8 for full VM partition
 	CHAR Unknown08[0xA8];
 	//HANDLE hVmmemHandle18356;//offset +0x3D98, size 0x8
-} PARTITION_HANDLE, *PPARTITION_HANDLE;
+} VM_PROCESS_CONTEXT, *PVM_PROCESS_CONTEXT;
 
 typedef struct _EPROCESS_INTERNALS {
 	ULONG VmwpMitigationsOriginal;
@@ -268,8 +268,8 @@ BOOLEAN VidGetGparBlockInfoFromGPA(PCHAR pBuffer, ULONG len);
 PVOID VidPsProcessCheckWorker(PVOID pCurrentProcess, PVOID pRetAddress);
 BOOLEAN VidGetMBlockInfo(PCHAR pBuffer, ULONG len);
 BOOLEAN VidInternalReadMemory(PCHAR pBuffer, ULONG len);
-PGPAR_OBJECT VidGetGparObjectForGpa(PPARTITION_HANDLE pPartitionHandle, UINT64 GPA);
-BOOLEAN VidGetContainerMemoryBlock(PPARTITION_HANDLE pPartitionHandle, PCHAR pBuffer, ULONG len, ULONG64 GPA);
+PGPAR_OBJECT VidGetGparObjectForGpa(PVM_PROCESS_CONTEXT pPartitionHandle, UINT64 GPA);
+BOOLEAN VidGetContainerMemoryBlock(PVM_PROCESS_CONTEXT pPartitionHandle, PCHAR pBuffer, ULONG len, ULONG64 GPA);
 
 //
 //process.c
