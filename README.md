@@ -1,3 +1,5 @@
+This is fork of LiveCloudKd early developed by Matt Suiche (@msuiche) - https://github.com/comaeio/LiveCloudKd
+
 ## LiveCloudKd (2019). Still beta stage!
 
 Added new methods for accessing guest Hyper-V VM Memory: 
