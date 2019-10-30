@@ -1,4 +1,5 @@
 from LiveCloudKdModule import *
+
 dll_path = 'C:\\Distr\\Test\\WinDBG101903x64\\LiveCloudKdSdk.dll'
 
 a = LiveCloudKdPy(dll_path)
