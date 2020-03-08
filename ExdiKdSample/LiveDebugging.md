@@ -36,7 +36,7 @@ It automatically launches WinDBG with EXDi interface in live debugging mode usin
 
 2. You can see working WinDBG and separate logging windows:
 
-![](./images/EXDI_0.png)
+![](./images/EXDI6.png)
 
 3. Also you can directly start WinDBG using command
 
@@ -57,7 +57,7 @@ CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
 
 to field.
 
-![](./images/EXDI6.png)
+![](./images/EXDI7.png)
 
 # Live debugging usage
 
@@ -89,7 +89,7 @@ The image at <module_base_address> is SKCI.dll
 The image at <module_base_address> is cng.sys 
 ```
 
-![](./images/EXDI7.png)
+![](./images/EXDI8.png)
 
 5. Reload symbols for all modules, that will be found by WinDBG:
 
@@ -157,7 +157,7 @@ command
 
 3. Sometimes (not often) WinDBG can suddenly break in random code, as a usual debugging. It can be caused by some other exception during debugging. When that exception occures, there is no "breakpoint # hit" message.
 
-![](./images/EXDI8.png)
+![](./images/EXDI9.png)
 
 4. You can switch register's context to VTL1, using "wrmsr 0x1111 1" command. "wrmsr 0x1111 0" switch back to VTL0. VTL0 and VTL1 memory is accessible all time.
 5. If you want restart VM, but Hyper-V show error about existing partition, see, that LiveCloudKd, WinDBG console message windows are closed. LiveCloudKd duplicate some handles from vmwp.exe. You can manually unload debugger driver, if you kill WinDBG process, becuase some interception message will be handled by driver.
