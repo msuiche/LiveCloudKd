@@ -30,3 +30,5 @@ You can use WinDBG Preview with EXDi plugin too. But WinDBG Preview has bug with
 4. You can read\write to guest OS memory and execute WinDBG commands, that work for dump files. Remember, that it is static plugin example, and you can't do single step (F11, F8) or running commands (F5).
 
 ![](./images/EXDi5.png)
+
+Detailed information about live debugging you can find on [this page](LiveDebugging.md)
