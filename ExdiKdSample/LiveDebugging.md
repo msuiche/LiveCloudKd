@@ -5,6 +5,14 @@ LiveCloudKd EXDi module can be used for debugging Hyper-V guest OS without enabl
 Standard Hyper-V VM can be debugged too, but more intereseting is to debug securekernel part of Windows.
 Docker containers, running in Hyper-V isolation mode, and Windows Sandbox can be debugged too, but EXDi module has some syncs problems in multi CPU environment (because all function's calls to EXDi go from blackboxing dbgeng.dll). EXDi works, but unexpected interruptions may be catched during tracing.
 
+# VSM\VBS activating for securekernel debugging
+
+Read official Microsoft document first [Enable virtualization-based protection of code integrity] (https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
+It was enough for me to enable VBS in group policy editor.
+
+For guest VM don't forget enable SecureBoot option. Don't enable nested virtualization support. VBS in guest Hyper-V VM works without guest hypervisor. More than - nested virtualization and VSM are incompatible together (for Windows 10, build 1909 and Windows Server 2019, at least)
+
+
 # Installation
 
 EXDi is used for integration custom debugging engines with WinDBG.
