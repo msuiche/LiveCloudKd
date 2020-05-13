@@ -7,29 +7,16 @@ Docker containers, running in Hyper-V isolation mode, and Windows Sandbox can be
 
 # VSM\VBS activating for securekernel debugging
 
-<<<<<<< .mine
 Read official Microsoft document first [Enable virtualization-based protection of code integrity](https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
+
 It was enough for me to enable VBS in group policy editor.
 
-
-=======
-Read official Microsoft document first [Enable virtualization-based protection of code integrity] (https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
-It was enough for me to enable VBS in group policy editor.
-
-For guest VM don't forget enable SecureBoot option. Don't enable nested virtualization support. VBS in guest Hyper-V VM works without guest hypervisor. More than - nested virtualization and VSM are incompatible together (for Windows 10, build 1909 and Windows Server 2019, at least)
->>>>>>> .theirs
-
-<<<<<<< .mine
 For guest VM don't forget enable SecureBoot option. 
 Check Get-VMSecurity -VMName <VMName> output. VirtualizationBasedSecurityOptOut must be $false.
+
 Don't enable nested virtualization support. VBS in guest Hyper-V VM works without guest hypervisor. More than - nested virtualization and VSM are incompatible together (for Windows 10, build 1909 and Windows Server 2019, at least).
-Official doc (mentioned above) said: "HVCI and nested virtualization can be enabled at the same time", but in my test lab i get false VBS starting result, when hypervisorlaunchtype option in bcdedit was auto.
-=======
+Official doc (mentioned above) said: "HVCI and nested virtualization can be enabled at the same time", but i get false VBS starting result in my test lab, when hypervisorlaunchtype option in bcdedit was auto.
 
-
-
-
->>>>>>> .theirs
 
 # Installation
 
