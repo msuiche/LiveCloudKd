@@ -3,7 +3,7 @@
 //                     from the LeechAgent. This is in a separate file to avoid
 //                     issues with missing python environments at process creation.
 //
-// (c) Ulf Frisk, 2019
+// (c) Ulf Frisk, 2020
 // Author: Ulf Frisk, pcileech@frizk.net
 //
 #define Py_LIMITED_API 0x03060000
@@ -15,7 +15,7 @@
 #include <python.h>
 #endif
 #include <Windows.h>
-#include "leechcore.h"
+#include <leechcore.h>
 #include "leechcorepyc.h"
 
 #define PYTHON_PATH_MAX             7*MAX_PATH
@@ -49,7 +49,6 @@ BOOL LeechCorePyC_EmbPythonInitialize(_In_ HMODULE hDllPython)
     // 0: fixup python zip version
     wszPythonLib[6] = (WCHAR)Py_GetVersion()[0];
     wszPythonLib[7] = (WCHAR)Py_GetVersion()[2];
-    WCHAR ZZZ = (WCHAR)Py_GetVersion()[2];
     // 1: Construct Python Path
     Util_GetPathDll(wszPathExe, NULL);
     Util_GetPathDll(wszPathBasePython, hDllPython);

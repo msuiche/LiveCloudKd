@@ -1,11 +1,12 @@
 //	leechcorepyc.c : Implementation of the LeechCore Python API
 //
-// (c) Ulf Frisk, 2019
+// (c) Ulf Frisk, 2020
 // Author: Ulf Frisk, pcileech@frizk.net
 //
 #ifndef __LEECHCOREPYC_H__
 #define __LEECHCOREPYC_H__
 #include <Windows.h>
+#include <leechcore.h>
 
 /*
 * Initialize and clean up the standard output from the embedded Python console

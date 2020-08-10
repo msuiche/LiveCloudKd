@@ -12,8 +12,9 @@
 // Author: Matt Suiche, msuiche@comae.com
 //
 
-#include "device.h"
-#include "memmap.h"
+#include "leechcore.h"
+#include "leechcore_device.h"
+#include "leechcore_internal.h"
 #include "util.h"
 #include "device_hvmm.h"
 
@@ -44,96 +45,101 @@
 // GENERAL FUNCTIONALITY BELOW:
 //-----------------------------------------------------------------------------
 
+extern READ_MEMORY_METHOD g_MemoryReadInterfaceType;
+extern WRITE_MEMORY_METHOD g_MemoryWriteInterfaceType;
 
-BOOL DeviceHVMM_WriteMEM(_In_ QWORD qwAddr, _In_ PBYTE pb, _In_ DWORD cb)
+_Success_(return)
+BOOL DeviceHVMM_WriteMEM(_In_ PLC_CONTEXT ctxLC, _In_ DWORD cpMEMs, _Inout_ PPMEM_SCATTER ppMEMs)
 {
-	PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxDeviceMain->hDevice;
+	PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
+    PMEM_SCATTER pMEM;
+    DWORD i;
 
-	if (!HVMM_WriteFile(ctx->Partition, qwAddr, pb, cb)) {
-		vprintf("HVMM: ERROR: Memory write fail\n");
-		return FALSE;
-	}
+    for (i = 0; i < cpMEMs; i++) {
+        pMEM = ppMEMs[i];
+
+        if (!HVMM_WriteFile(ctx->Partition, pMEM->qwA, pMEM->pb, pMEM->cb)) {
+            lcprintf(ctxLC, "HVMM: ERROR: Memory write fail\n");
+            return FALSE;
+        }
+    }
 
 	return TRUE;
 }
 
-VOID DeviceHVMM_ReadScatterMEM(_Inout_ PPMEM_IO_SCATTER_HEADER ppMEMs, _In_ DWORD cpMEMs)
+VOID DeviceHVMM_ReadScatter(_In_ PLC_CONTEXT ctxLC, _In_ DWORD cpMEMs, _Inout_ PPMEM_SCATTER ppMEMs)
 {
-    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxDeviceMain->hDevice;
-    DWORD i, cbToRead;
-    PMEM_IO_SCATTER_HEADER pMEM;
+    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
+    DWORD i;
+    PMEM_SCATTER pMEM;
     LARGE_INTEGER qwA_LI;
-    BOOL fResultRead;
     for (i = 0; i < cpMEMs; i++) {
         pMEM = ppMEMs[i];
-
-        cbToRead = (DWORD)min(pMEM->cb, ctx->paMax - pMEM->qwA);
+        if (pMEM->f || MEM_SCATTER_ADDR_ISINVALID(pMEM)) { continue; }
         qwA_LI.QuadPart = pMEM->qwA;
 
-        fResultRead = HVMM_ReadFile(ctx->Partition, qwA_LI.QuadPart, pMEM->pb, pMEM->cbMax);
-
-        if (fResultRead == TRUE) {
-            pMEM->cb = pMEM->cbMax;
+        pMEM->f = HVMM_ReadFile(ctx->Partition, pMEM->qwA, pMEM->pb, pMEM->cb);
+       
+        if (pMEM->f) {
+            if (ctxLC->fPrintf[LC_PRINTF_VVV]) {
+                lcprintf_fn(
+                    ctxLC,
+                    "READ:\n        offset=%016llx req_len=%08x\n",
+                    pMEM->qwA,
+                    pMEM->cb
+                );
+                Util_PrintHexAscii(ctxLC, pMEM->pb, pMEM->cb, 0);
+            }
         }
-
-        if (ctxDeviceMain->fVerboseExtraTlp) {
-            vprintf(
-                "device_hvmm.c!DeviceHVVM_ReadScatterMEM: READ:\n" \
-                "        offset=%016llx req_len=%08x rsp_len=%08x\n",
-                pMEM->qwA,
-                pMEM->cbMax,
-                pMEM->cb
-            );
-            Util_PrintHexAscii(pMEM->pb, pMEM->cb, 0);
+        else {
+            lcprintfvvv_fn(ctxLC, "READ FAILED:\n        offset=%016llx req_len=%08x\n", pMEM->qwA, pMEM->cb);
         }
     }
 }
 
-BOOL DeviceHVMM_GetOption(_In_ QWORD fOption, _Out_ PQWORD pqwValue)
+_Success_(return)
+BOOL DeviceHVMM_GetOption(_In_ PLC_CONTEXT ctxLC, _In_ QWORD fOption, _Out_ PQWORD pqwValue)
 {
-    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxDeviceMain->hDevice;
+    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
 
-    if (fOption == LEECHCORE_OPT_MEMORYINFO_VALID) {
+    if (fOption == LC_OPT_MEMORYINFO_VALID) {
         *pqwValue = 1;
         return TRUE;
     }
 
     switch (fOption) {
-        case LEECHCORE_OPT_MEMORYINFO_ADDR_MAX:
-            *pqwValue = ctx->paMax;
-            return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_FLAG_32BIT:
+        case LC_OPT_MEMORYINFO_FLAG_32BIT:
             *pqwValue = 0; // only 64-bit supported currently
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_FLAG_PAE:
+        case LC_OPT_MEMORYINFO_FLAG_PAE:
             *pqwValue = 0;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_VERSION_MINOR:
+        case LC_OPT_MEMORYINFO_OS_VERSION_MINOR:
             *pqwValue = ctx->MemoryInfo.NtBuildNumber.HighPart;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_VERSION_MAJOR:
+        case LC_OPT_MEMORYINFO_OS_VERSION_MAJOR:
             *pqwValue = ctx->MemoryInfo.NtBuildNumber.LowPart;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_PFN:
+        case LC_OPT_MEMORYINFO_OS_PFN:
             *pqwValue = ctx->MemoryInfo.PfnDataBase.QuadPart;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_PsLoadedModuleList:
+        case LC_OPT_MEMORYINFO_OS_PsLoadedModuleList:
             *pqwValue = ctx->MemoryInfo.PsLoadedModuleList.QuadPart;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_PsActiveProcessHead:
+        case LC_OPT_MEMORYINFO_OS_PsActiveProcessHead:
             *pqwValue = ctx->MemoryInfo.PsActiveProcessHead.QuadPart;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_MACHINE_IMAGE_TP:
+        case LC_OPT_MEMORYINFO_OS_MACHINE_IMAGE_TP:
             *pqwValue = IMAGE_FILE_MACHINE_AMD64; // only 64-bit supported currently
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_KERNELBASE:
+        case LC_OPT_MEMORYINFO_OS_KERNELBASE:
             *pqwValue = ctx->MemoryInfo.KernBase.QuadPart;
             return TRUE;
             // FUTURE:
-        case LEECHCORE_OPT_MEMORYINFO_OS_DTB:
+        case LC_OPT_MEMORYINFO_OS_DTB:
             *pqwValue = ctx->MemoryInfo.CR3.QuadPart;
             return TRUE;
-        case LEECHCORE_OPT_MEMORYINFO_OS_KERNELHINT:
+        case LC_OPT_MEMORYINFO_OS_KERNELHINT:
             *pqwValue = 0ULL;
             return FALSE;
     }
@@ -151,27 +157,32 @@ VOID DeviceHVMM_SvcClose()
     SERVICE_STATUS SvcStatus;
 
     // 1: shut down and delete service.
-    if ((hSCM = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE))) {
-        hSvcLiveCloudKd = OpenServiceA(hSCM, DEVICEHVMM_SERVICENAME, SERVICE_ALL_ACCESS);
 
-        if (hSvcLiveCloudKd) {
-            ControlService(hSvcLiveCloudKd, SERVICE_CONTROL_STOP, &SvcStatus);
-        }
+	if ((g_MemoryReadInterfaceType == ReadInterfaceHvmmDrvInternal) || (g_MemoryReadInterfaceType == ReadInterfaceWinHv))
+	{
+		if ((hSCM = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE))) {
+			hSvcLiveCloudKd = OpenServiceA(hSCM, DEVICEHVMM_SERVICENAME, SERVICE_ALL_ACCESS);
 
-        if (hSvcLiveCloudKd) { DeleteService(hSvcLiveCloudKd); }
-        if (hSvcLiveCloudKd) { CloseServiceHandle(hSvcLiveCloudKd); }
+			if (hSvcLiveCloudKd) {
+				ControlService(hSvcLiveCloudKd, SERVICE_CONTROL_STOP, &SvcStatus);
+			}
 
-        CloseServiceHandle(hSCM);
-    }
+			if (hSvcLiveCloudKd) { DeleteService(hSvcLiveCloudKd); }
+			if (hSvcLiveCloudKd) { CloseServiceHandle(hSvcLiveCloudKd); }
+
+			CloseServiceHandle(hSCM);
+		}
+	}
 }
 
 /*
 * Create the LiveCloudKd kernel driver loader service and load the kernel driver
 * into the kernel. Upon fail it's guaranteed that no lingering service exists.
 */
-BOOL DeviceHVMM_SvcStart()
+_Success_(return)
+BOOL DeviceHVMM_SvcStart(_In_ PLC_CONTEXT ctxLC)
 {
-    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxDeviceMain->hDevice;
+    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
     DWORD dwWinErr;
     CHAR szDriverFile[MAX_PATH] = { 0 };
     FILE *pDriverFile = NULL;
@@ -180,92 +191,100 @@ BOOL DeviceHVMM_SvcStart()
     SC_HANDLE hSCM = 0, hSvcLiveCloudKd = 0;
 
     // 1: verify that driver file exists.
-    if (!_strnicmp("hvmm://", ctxDeviceMain->cfg.szDevice, 7)) {
-		strcat_s(szDriverFile, _countof(szDriverFile), ctxDeviceMain->cfg.szDevice + 7);
-    }
-    else {
-        hModuleLeechCore = LoadLibraryA("leechcore.dll");
-        // NB! defaults to locating 'hvvm.sys' relative to the loaded
-        // 'leechcore.dll' - if unable to locate library (for whatever reason)
-        // defaults will be to try to loade relative to executable (NULL).
-        Util_GetPathDll(szDriverFile, hModuleLeechCore);
-        if (hModuleLeechCore) { FreeLibrary(hModuleLeechCore); }
-        strcat_s(szDriverFile, _countof(szDriverFile), DEVICEHVMM_DRIVERFILE);
-    }
+	if ((g_MemoryReadInterfaceType == ReadInterfaceHvmmDrvInternal) || (g_MemoryReadInterfaceType == ReadInterfaceWinHv))
+	{
+		if (!_strnicmp("hvmm://", ctxLC->Config.szDevice, 7)) {
+			strcat_s(szDriverFile, _countof(szDriverFile), ctxLC->Config.szDevice + 7);
+		}
+		else {
+			hModuleLeechCore = LoadLibraryA("leechcore.dll");
+			// NB! defaults to locating 'hvvm.sys' relative to the loaded
+			// 'leechcore.dll' - if unable to locate library (for whatever reason)
+			// defaults will be to try to loade relative to executable (NULL).
+            Util_GetPathLib(szDriverFile);
+			if (hModuleLeechCore) { FreeLibrary(hModuleLeechCore); }
+			strcat_s(szDriverFile, _countof(szDriverFile), DEVICEHVMM_DRIVERFILE);
+		}
 
-    if (fopen_s(&pDriverFile, szDriverFile, "rb") || !pDriverFile) {
-        vprintf(
-            "DEVICE: ERROR: unable to locate the LiveCloudKd driver file '%s'.\n",
-            szDriverFile);
-        return FALSE;
-    }
 
-    fclose(pDriverFile);
+		if (fopen_s(&pDriverFile, szDriverFile, "rb") || !pDriverFile) {
+            lcprintf(ctxLC,
+				"DEVICE: ERROR: unable to locate the LiveCloudKd driver file '%s'.\n",
+				szDriverFile);
+			return FALSE;
+		}
 
-    // 2: create and start service to load driver into kernel.
-    if (!(hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CREATE_SERVICE))) {
-        vprintf("DEVICE: ERROR: unable to load driver - not running as elevated administrator?\n");
-        return FALSE;
-    }
+		fclose(pDriverFile);
 
-    hSvcLiveCloudKd = CreateServiceA(
-        hSCM,
-        DEVICEHVMM_SERVICENAME,
-        DEVICEHVMM_SERVICENAME,
-        SERVICE_ALL_ACCESS,
-        SERVICE_KERNEL_DRIVER,
-        SERVICE_DEMAND_START,
-        SERVICE_ERROR_NORMAL,
-        szDriverFile,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
+		// 2: create and start service to load driver into kernel.
+		if (!(hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CREATE_SERVICE))) {
+            lcprintf(ctxLC, "DEVICE: ERROR: unable to load driver - not running as elevated administrator?\n");
+			return FALSE;
+		}
 
-    if (!hSvcLiveCloudKd) {
-        if ((dwWinErr = GetLastError()) == ERROR_SERVICE_EXISTS) {
-            hSvcLiveCloudKd = OpenServiceA(hSCM, DEVICEHVMM_SERVICENAME, SERVICE_ALL_ACCESS);
-        }
-        else {
-            vprintf(
-                "DEVICE HVMM: ERROR: Unable create service required to load driver.\n"
-                "Is project executable running from the C:\\ drive ?\n");
-            vprintfv("DEVICE HVMM: ERROR: LastError: 0x%08x\n", dwWinErr);
-            CloseServiceHandle(hSCM);
-            return FALSE;
-        }
-    }
+		hSvcLiveCloudKd = CreateServiceA(
+			hSCM,
+			DEVICEHVMM_SERVICENAME,
+			DEVICEHVMM_SERVICENAME,
+			SERVICE_ALL_ACCESS,
+			SERVICE_KERNEL_DRIVER,
+			SERVICE_DEMAND_START,
+			SERVICE_ERROR_NORMAL,
+			szDriverFile,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL);
 
-    if (!StartServiceA(hSvcLiveCloudKd, 0, NULL) && ((dwWinErr = GetLastError()) != ERROR_SERVICE_ALREADY_RUNNING)) {
-        vprintf(
-            "DEVICE: ERROR: Unable to load driver into kernel.\n"
-            "Is project executable running from the C:\\ drive ?\n");
-        vprintfv("DEVICE HVMM: ERROR: LastError: 0x%08x\n", dwWinErr);
-        CloseServiceHandle(hSvcLiveCloudKd);
-        CloseServiceHandle(hSCM);
-        DeviceHVMM_SvcClose();
-        return FALSE;
-    }
+		if (!hSvcLiveCloudKd) {
+			if ((dwWinErr = GetLastError()) == ERROR_SERVICE_EXISTS) {
+				hSvcLiveCloudKd = OpenServiceA(hSCM, DEVICEHVMM_SERVICENAME, SERVICE_ALL_ACCESS);
+			}
+			else {
+                lcprintf(ctxLC,
+					"DEVICE HVMM: ERROR: Unable create service required to load driver.\n"
+					"Is project executable running from the C:\\ drive ?\n");
+                lcprintfv(ctxLC, "DEVICE HVMM: ERROR: LastError: 0x%08x\n", dwWinErr);
+				CloseServiceHandle(hSCM);
+				return FALSE;
+			}
+		}
 
-    CloseServiceHandle(hSvcLiveCloudKd);
-    CloseServiceHandle(hSCM);
+		if (!StartServiceA(hSvcLiveCloudKd, 0, NULL) && ((dwWinErr = GetLastError()) != ERROR_SERVICE_ALREADY_RUNNING)) {
+            lcprintf(ctxLC,
+				"DEVICE: ERROR: Unable to load driver into kernel.\n"
+				"Is project executable running from the C:\\ drive ?\n");
+            lcprintfv(ctxLC, "DEVICE HVMM: ERROR: LastError: 0x%08x\n", dwWinErr);
+			CloseServiceHandle(hSvcLiveCloudKd);
+			CloseServiceHandle(hSCM);
+			DeviceHVMM_SvcClose();
+			return FALSE;
+		}
 
-    // 3: open file handle
+		CloseServiceHandle(hSvcLiveCloudKd);
+		CloseServiceHandle(hSCM);
 
-    ctx->hFile = CreateFileA(
-        DEVICEHVMM_MEMORYFILE,
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
-        NULL,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL);
+		// 3: open file handle
 
-    if (!ctx->hFile) {
-        DeviceHVMM_SvcClose();
-        return FALSE;
-    }
+		ctx->hFile = CreateFileA(
+			DEVICEHVMM_MEMORYFILE,
+			GENERIC_READ | GENERIC_WRITE,
+			FILE_SHARE_READ | FILE_SHARE_WRITE,
+			NULL,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL,
+			NULL);
+
+		if (!ctx->hFile) {
+			DeviceHVMM_SvcClose();
+			return FALSE;
+		}
+	}
+	else
+	{
+		ctx->hFile = (HANDLE)1;
+	}
 
     return TRUE;
 }
@@ -273,60 +292,50 @@ BOOL DeviceHVMM_SvcStart()
 /*
 * Close the HVVM device and clean up both context and any kernel drivers.
 */
-VOID DeviceHVVM_Close()
+VOID DeviceHVMM_Close(_Inout_ PLC_CONTEXT ctxLC)
 {
-    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxDeviceMain->hDevice;
+    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
     DeviceHVMM_SvcClose();
 
     if (ctx) {
         CloseHandle(ctx->hFile);
-        MemMap_Close();
         LocalFree(ctx);
     }
 
-    ctxDeviceMain->hDevice = 0;
+    ctxLC->hDevice = 0;
 }
 
-BOOL DeviceHVVM_GetMemoryInformation()
+_Success_(return)
+BOOL DeviceHVMM_GetMemoryInformation(_Inout_ PLC_CONTEXT ctxLC)
 {
-    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxDeviceMain->hDevice;
+    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
     DWORD i;
     // 1: retrieve information from hypervisor
     if (HVMMStart(ctx));
 
     // 2: sanity checks
     if (ctx->MemoryInfo.NumberOfRuns.QuadPart > MAX_NUMBER_OF_RUNS) {
-        vprintf("DEVICE HVMM: ERROR: too many memory segments reported from LiveCloudKd driver. (%lli)\n", ctx->MemoryInfo.NumberOfRuns.QuadPart);
+
+        lcprintf(ctxLC, "DEVICE: ERROR: too few/many memory segments reported from winpmem driver. (%lli)\n", ctx->MemoryInfo.NumberOfRuns.QuadPart);
         return FALSE;
     }
+    
     // 3: parse memory ranges
-    MemMap_Initialize(0x0000ffffffffffff);
+
     for (i = 0; i < ctx->MemoryInfo.NumberOfRuns.QuadPart; i++) {
-        if (!MemMap_AddRange(ctx->MemoryInfo.Run[i].start, ctx->MemoryInfo.Run[i].length, ctx->MemoryInfo.Run[i].start)) {
-            vprintf("DEVICE HVMM: FAIL: unable to add range to memory map. (%016llx %016llx %016llx)\n", ctx->MemoryInfo.Run[i].start, ctx->MemoryInfo.Run[i].length, ctx->MemoryInfo.Run[i].start);
+        if (!LcMemMap_AddRange(ctxLC, ctx->MemoryInfo.Run[i].start, ctx->MemoryInfo.Run[i].length, ctx->MemoryInfo.Run[i].start)) {
+            lcprintf(ctxLC, "DEVICE: FAIL: unable to add range to memory map. (%016llx %016llx %016llx)\n", ctx->MemoryInfo.Run[i].start, ctx->MemoryInfo.Run[i].length, ctx->MemoryInfo.Run[i].start);
             return FALSE;
         }
     }
 
-    MemMap_GetMaxAddress(&ctx->paMax);
+    //MemMap_GetMaxAddress(&ctx->paMax);
 
     return TRUE;
 }
 
-BOOL DeviceHVVM_Init()
-{
-    //
-    // FUTURE: Leverage VidGetVirtualProcessorState() API to query the CR3 value to avoid to have to brute-force it and
-    // consider the image like a raw memory image.
-    //
-
-    // CR3 for LEECHCORE_OPT_MEMORYINFO_OS_DTB
-    // RIP for LEECHCORE_OPT_MEMORYINFO_OS_KERNELHINT
-
-    return TRUE;
-}
-
-BOOL DeviceHVMM_Open()
+_Success_(return)
+BOOL DeviceHVMM_Open(_Inout_ PLC_CONTEXT ctxLC)
 {
     BOOL result;
     PDEVICE_CONTEXT_HVMM ctx;
@@ -335,43 +344,38 @@ BOOL DeviceHVMM_Open()
     DeviceHVMM_SvcClose();
 
     // 2: initialize core context.
-    ctx = (PDEVICE_CONTEXT_HVMM)LocalAlloc(LMEM_ZEROINIT, sizeof(DEVICE_CONTEXT_HVVM));
+    ctx = (PDEVICE_CONTEXT_HVMM)LocalAlloc(LMEM_ZEROINIT, sizeof(DEVICE_CONTEXT_HVMM));
     if (!ctx) { return FALSE; }
 
-    ctxDeviceMain->hDevice = (HANDLE)ctx;
+    ctxLC->hDevice = (HANDLE)ctx;
     // set callback functions and fix up config
-    ctxDeviceMain->cfg.tpDevice = LEECHCORE_DEVICE_HVMM;
-    ctxDeviceMain->cfg.fVolatile = TRUE;
-    ctxDeviceMain->cfg.cbMaxSizeMemIo = ctxDeviceMain->cfg.cbMaxSizeMemIo ? min(ctxDeviceMain->cfg.cbMaxSizeMemIo, 0x01000000) : 0x01000000; // 16MB (or lower user-value)
-    ctxDeviceMain->pfnClose = DeviceHVVM_Close;
-    ctxDeviceMain->pfnReadScatterMEM = DeviceHVMM_ReadScatterMEM;
-	ctxDeviceMain->pfnWriteMEM = DeviceHVMM_WriteMEM;
-    ctxDeviceMain->pfnGetOption = DeviceHVMM_GetOption;
+
+    //ctxLC->Config.fVolatile = TRUE;
+    ctxLC->Config.fVolatile = FALSE;
+
+    ctxLC->pfnClose = DeviceHVMM_Close;
+    ctxLC->pfnReadScatter = DeviceHVMM_ReadScatter;
+    ctxLC->pfnWriteScatter = DeviceHVMM_WriteMEM;
+    ctxLC->pfnGetOption = DeviceHVMM_GetOption;
 
     // 3: load hvvm kernel driver.
-    result = DeviceHVMM_SvcStart();
+    result = DeviceHVMM_SvcStart(ctxLC);
     if (!result) {
-        vprintf("DEVICE: FAILED: LiveCloudKd - Failed to initialize the driver.");
+        lcprintf(ctxLC, "DEVICE: FAILED: LiveCloudKd - Failed to initialize the driver.");
         goto fail;
     }
 
     // 4: retrieve memory map.
-    result = result && DeviceHVVM_GetMemoryInformation();
+    result = DeviceHVMM_GetMemoryInformation(ctxLC);
     if (!result) {
-        vprintf("DEVICE: FAILED: LiveCloudKd - Unable to parse guest memory map.");
+        lcprintf(ctxLC, "DEVICE: FAILED: LiveCloudKd - Unable to parse guest memory map.");
         goto fail;
     }
 
-    if (!DeviceHVVM_Init()) {
-        vprintf("DEVICE: FAILED: LiveCloudKd - Unable to get guest virtual machine data.");
-        goto fail;
-    }
-
-    ctxDeviceMain->cfg.paMaxNative = ctx->paMax;
-    vprintfv("DEVICE: Successfully loaded hvmm auxiliary driver.\n");
+    lcprintf(ctxLC, "DEVICE: Successfully loaded hvmm auxiliary driver.\n");
     return TRUE;
 
 fail:
-    DeviceHVVM_Close();
+    DeviceHVMM_Close(ctxLC);
     return FALSE;
 }

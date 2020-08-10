@@ -1,23 +1,22 @@
-// hvmm.c : implementation of the Hyper-V Virtual Machines based on LiveCloudKd
+// hvmm.c : implementation of the Hyper-V Virtual Machines based on LiveCloudKdSdk
 // Please refer to the hvmm/ folder for more information or its original repository:
 // https://github.com/comaeio/LiveCloudKd
 //
 // (c) Ulf Frisk, 2018
 // Author: Ulf Frisk, pcileech@frizk.net
 //
-// (c) Arthur Khudyaev, 2019
+// (c) Arthur Khudyaev, 2020
 // Author: Arthur Khudyaev, @gerhart_x
 //
 // (c) Matt Suiche, 2019
 // Author: Matt Suiche, msuiche@comae.com
 //
 
-#include "device.h"
 #include "device_hvmm.h"
 
-READ_MEMORY_METHOD g_MemoryReadInterfaceType = ReadInterfaceUnsupported;
-WRITE_MEMORY_METHOD g_MemoryWriteInterfaceType = WriteInterfaceWinHv;
-PHVDD_PARTITION g_Partition = NULL;
+READ_MEMORY_METHOD g_MemoryReadInterfaceType = ReadInterfaceHvmmDrvInternal;
+WRITE_MEMORY_METHOD g_MemoryWriteInterfaceType = WriteInterfaceHvmmDrvInternal;
+ULONG64 g_Partition = 0;
 
 USHORT
 GetConsoleTextAttribute(
@@ -51,36 +50,50 @@ Green(LPCWSTR Format, ...)
 
 BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx)
 {
-    PHVDD_PARTITION Partitions;
-    ULONG PartitionCount = 0;
+	PULONG64 Partitions;
+    ULONG64 PartitionCount = 0;
+	VM_OPERATIONS_CONFIG VmOperationsConfig = { 0 };
+	WCHAR* FriendlyNameP = NULL;
 
     ULONG i;
     ULONG VmId;
 
-        wprintf(L"      LiveCloudKd plugin 0.1.20190726\n"
-        L"      Microsoft Hyper-V Virtual Machine plugin (supports only x64 guest Windows 10 and Windows Server 2019) for MemProcFS (by Ulf Frisk)\n"
-        L"      Based on LiveCloudKd of http://www.comae.com" 
-        L"      Copyright (C) 2019, Matthieu Suiche (@msuiche)\n"
-        L"      Copyright (C) 2019, Comae Technologies DMCC <http://www.comae.com> <support@comae.io>\n"
-        L"      All rights reserved.\n\n"
-
-        L"      Contributor:  Arthur Khudyaev (@gerhart_x)\n\n\n"
-        L"");
+        wprintf(L"\n"
+				L"   Microsoft Hyper-V Virtual Machine plugin 0.2.20200803 for MemProcFS (by Ulf Frisk).\n"
+				L"\n");
 
 
-		g_MemoryReadInterfaceType = ReadInterfaceHvmmDrvInternal;
-        Partitions = SdkGetPartitions(&PartitionCount, g_MemoryReadInterfaceType, FALSE);
+		SdkGetDefaultConfig(&VmOperationsConfig);
+
+		g_MemoryReadInterfaceType = VmOperationsConfig.ReadMethod;
+		g_MemoryWriteInterfaceType = VmOperationsConfig.WriteMethod;
+
+		VmOperationsConfig.LogLevel = 2;
+
+		Partitions = SdkEnumPartitions(&PartitionCount, &VmOperationsConfig); // driver already was loaded by leechcore
+
+		if (!Partitions)
+		{
+			wprintf(L"   Unable to get list of partitions\n");
+			return FALSE;
+		}
 
         wprintf(L"   Virtual Machines:\n");
         if (PartitionCount == 0)
         {
-            vprintf("ERROR:    --> No virtual machines running.\n");
+            wprintf(L"ERROR:    --> No virtual machines running.\n");
             return FALSE;
         }
 
 		for (i = 0; i < PartitionCount; i += 1)
 		{
-			wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X, %s)\n", i, Partitions[i].VidVmInfo.FriendlyName, Partitions[i].VidVmInfo.PartitionId, Partitions[i].VmTypeString);
+			ULONG64 PartitionId = 0;
+			WCHAR* VmTypeString = NULL;
+			SdkGetData(Partitions[i], HvddPartitionFriendlyName, &FriendlyNameP);
+			SdkGetData(Partitions[i], HvddPartitionId, &PartitionId);
+			SdkGetData(Partitions[i], HvddVmtypeString, &VmTypeString);
+			
+			wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X, %s)\n", i, FriendlyNameP, PartitionId, VmTypeString);
 		}
 
         VmId = 0;
@@ -96,60 +109,71 @@ BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx)
 
         if ((VmId + 1) > PartitionCount)
         {
-            vprintf("ERROR:    The virtual machine you selected do not exist.\n");
+            wprintf(L"ERROR:    The virtual machine you selected do not exist.\n");
             return FALSE;
         }
 
         wprintf(L"   You selected the following virtual machine: ");
 
-        Green(L"%s\n", Partitions[VmId].VidVmInfo.FriendlyName);
+		SdkGetData(Partitions[VmId], HvddPartitionFriendlyName, &FriendlyNameP);
+        Green(L"%s\n", FriendlyNameP);
 
-		g_Partition = &Partitions[VmId];
-		
-		if (g_MemoryReadInterfaceType == ReadInterfaceVidDll) {
+		g_Partition = Partitions[VmId];
 
-			BOOLEAN Ret = SdkHvmmPatchPsGetCurrentProcess(Partitions[VmId].WorkerPid, Partitions[VmId].CurrentProcess);
-			if (!Ret) {
-				wprintf(L"Error: Can't fix PsGetCurrentProcess\n");
-				return FALSE;
-			}
-		}
-
-		if (!SdkFillHvddPartitionStructure(&Partitions[VmId])) {
-			vprintf("ERROR:    Cannot initialize hvdd structure.\n");
+		if (!SdkSelectPartition(g_Partition))
+		{
+			wprintf(L"ERROR:    Cannot initialize hvdd structure.\n");
 			return FALSE;
-		}
+		};
 			
  
-        ctx->Partition = &Partitions[VmId];
-        ctx->paMax = Partitions[VmId].KiExcaliburData.MmMaximumPhysicalPage*PAGE_SIZE;
+        ctx->Partition = g_Partition;
+
+		SdkGetData(g_Partition, HvddMmMaximumPhysicalPage, &ctx->paMax);
+        ctx->paMax *= PAGE_SIZE;
 
         //
         //Get KPCR for every processor
         //
 
-        for (size_t i = 0; i < Partitions[VmId].KiExcaliburData.NumberProcessors; i++)
-        {
-           
-            ctx->MemoryInfo.KPCR[i].QuadPart = Partitions[VmId].KiExcaliburData.KPCRVa[i];
+		PULONG64 KPCR = NULL;
+		ULONG64 NumberOfCPU = 0;
+	
+		SdkGetData(g_Partition, HvddNumberOfCPU, &NumberOfCPU);
+		SdkGetData(g_Partition, HvddKPCR, &KPCR);
+
+        for (size_t i = 0; i < NumberOfCPU; i++)
+        {        			
+			ctx->MemoryInfo.KPCR[i].QuadPart = KPCR[i];
         }
         
-        ctx->MemoryInfo.KDBG = Partitions[VmId].KiExcaliburData.KdDebuggerDataBlockPa;
-      
-        ctx->MemoryInfo.NumberOfRuns.QuadPart = Partitions[VmId].KiExcaliburData.NumberOfRuns;
-        ctx->MemoryInfo.KernBase.QuadPart = Partitions[VmId].KiExcaliburData.KernelBase;
-        ctx->MemoryInfo.PfnDataBase = SdkMmGetPhysicalAddress(&Partitions[VmId], Partitions[VmId].KiExcaliburData.MmPfnDatabase);
-        ctx->MemoryInfo.PsLoadedModuleList = SdkMmGetPhysicalAddress(&Partitions[VmId], Partitions[VmId].KiExcaliburData.PsLoadedModuleList);
-        ctx->MemoryInfo.PsActiveProcessHead = SdkMmGetPhysicalAddress(&Partitions[VmId], Partitions[VmId].KiExcaliburData.PsActiveProcessHead);
-        ctx->MemoryInfo.NtBuildNumber.LowPart = Partitions[VmId].KiExcaliburData.NtBuildNumber;
-        ctx->MemoryInfo.NtBuildNumberAddr.QuadPart = Partitions[VmId].KiExcaliburData.NtBuildNumberVA;
-        ctx->MemoryInfo.CR3.QuadPart = Partitions[VmId].KiExcaliburData.DirectoryTableBase;
+		SdkGetData(g_Partition, HvddKDBGPa, &ctx->MemoryInfo.KDBG.QuadPart); 
+		SdkGetData(g_Partition, HvddNumberOfRuns, &ctx->MemoryInfo.NumberOfRuns.QuadPart);
+		SdkGetData(g_Partition, HvddKernelBase, &ctx->MemoryInfo.KernBase.QuadPart); 
 
-        RtlCopyMemory(&ctx->MemoryInfo.Run, Partitions[VmId].KiExcaliburData.Run, Partitions[VmId].KiExcaliburData.NumberOfRuns*sizeof(ULONG64)*3+sizeof(ULONG64)*3);
+		ULONG64 MmPfnDatabase = 0;
+		ULONG64 PsLoadedModuleList = 0;
+		ULONG64 PsActiveProcessHead = 0;
+		SdkGetData(g_Partition, HvddMmPfnDatabase, &MmPfnDatabase);
+		SdkGetData(g_Partition, HvddPsLoadedModuleList, &PsLoadedModuleList);
+		SdkGetData(g_Partition, HvddPsActiveProcessHead, &PsActiveProcessHead);
+
+        ctx->MemoryInfo.PfnDataBase.QuadPart = SdkGetPhysicalAddress(g_Partition, MmPfnDatabase);
+        ctx->MemoryInfo.PsLoadedModuleList.QuadPart = SdkGetPhysicalAddress(g_Partition, PsLoadedModuleList);
+        ctx->MemoryInfo.PsActiveProcessHead.QuadPart = SdkGetPhysicalAddress(g_Partition, PsActiveProcessHead);
+
+		SdkGetData(g_Partition, HvddNtBuildNumber, &ctx->MemoryInfo.NtBuildNumber.LowPart);
+		SdkGetData(g_Partition, HvddNtBuildNumberVA, &ctx->MemoryInfo.NtBuildNumberAddr.QuadPart);
+		SdkGetData(g_Partition, HvddDirectoryTableBase, &ctx->MemoryInfo.CR3.QuadPart);
+
+		PULONG64 pRun = NULL;
+		SdkGetData(g_Partition, HvddRun, &pRun);
+
+        RtlCopyMemory(&ctx->MemoryInfo.Run, pRun, ctx->MemoryInfo.NumberOfRuns.QuadPart *sizeof(ULONG64)*3+sizeof(ULONG64)*3);
 
         //convert pages to address
 
-        for (i = 0; i < Partitions[VmId].KiExcaliburData.NumberOfRuns; i++)
+        for (i = 0; i < ctx->MemoryInfo.NumberOfRuns.QuadPart; i++)
         {
             ctx->MemoryInfo.Run[i].start = ctx->MemoryInfo.Run[i].start * PAGE_SIZE;
 			ctx->MemoryInfo.Run[i].length = ctx->MemoryInfo.Run[i].length * PAGE_SIZE;
@@ -159,20 +183,20 @@ BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx)
 }
 
 
-BOOLEAN HVMM_ReadFile(PHVDD_PARTITION PartitionHandle, UINT64 StartPosition, PVOID lpBuffer, UINT64 nNumberOfBytesToRead)
+BOOLEAN HVMM_ReadFile(ULONG64 PartitionHandle, UINT64 StartPosition, PVOID lpBuffer, UINT64 nNumberOfBytesToRead)
 {
 	BOOLEAN Ret = FALSE;
 	
-	Ret = SdkHvmmReadPhysicalMemory(PartitionHandle, StartPosition, (ULONG) nNumberOfBytesToRead, lpBuffer,g_MemoryReadInterfaceType);
+	Ret = SdkReadPhysicalMemory(PartitionHandle, StartPosition, (ULONG) nNumberOfBytesToRead, lpBuffer, g_MemoryReadInterfaceType);
 
 	return Ret;
 }
 
-BOOLEAN HVMM_WriteFile(PHVDD_PARTITION PartitionHandle, UINT64 StartPosition, PVOID lpBuffer, UINT64 nNumberOfBytesToWrite)
+BOOLEAN HVMM_WriteFile(ULONG64 PartitionHandle, UINT64 StartPosition, PVOID lpBuffer, UINT64 nNumberOfBytesToWrite)
 {
 	BOOLEAN Ret = FALSE;
 
-	Ret = SdkHvmmWritePhysicalMemory(PartitionHandle, StartPosition, nNumberOfBytesToWrite, lpBuffer, g_MemoryWriteInterfaceType);
+	Ret = SdkWritePhysicalMemory(PartitionHandle, StartPosition, nNumberOfBytesToWrite, lpBuffer, g_MemoryWriteInterfaceType);
 
 	return Ret;
 }
