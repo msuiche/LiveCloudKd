@@ -1,9 +1,16 @@
-// device_hvmm.c : implementation of the Hyper-V Virtual Machines based on LiveCloudKd
+// hvmm.c : implementation of the Hyper-V Virtual Machines based on LiveCloudKdSdk
 // Please refer to the hvmm/ folder for more information or its original repository:
 // https://github.com/comaeio/LiveCloudKd
 //
 // (c) Ulf Frisk, 2018
 // Author: Ulf Frisk, pcileech@frizk.net
+//
+// (c) Arthur Khudyaev, 2020
+// Author: Arthur Khudyaev, @gerhart_x
+//
+// (c) Matt Suiche, 2019
+// Author: Matt Suiche, msuiche@comae.com
+//
 
 
 
