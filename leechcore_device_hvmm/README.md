@@ -9,7 +9,10 @@ Sources was taken from https://github.com/ufrisk/LeechCore-plugin
 For starting copy leechcore_device_hvmm.dll with LiveCloudKdSdk.dll and hvmm.sys to MemProcFs folder
 
 start MemProcFs:
+
+```
 .\MemProcFS.exe -device hvmm -v
+```
 
 you must see something like that:
 
