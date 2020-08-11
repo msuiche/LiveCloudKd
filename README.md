@@ -5,6 +5,10 @@ LiveCloudKd was the first utility to focus on Virtual Machine introspection for 
 This feature was later added into LiveKd 5.0 by Mark Russinovich and Ken Johnson.
 https://blogs.technet.microsoft.com/markrussinovich/2010/10/09/livekd-for-virtual-machine-debugging/
 
+## Maintainers
+- [@msuiche](https://twitter.com/msuiche)
+- [@gerhart_x](https://twitter.com/gerhart_x)
+
 ## LiveCloudKd (2010)
 One of the initial attribute of LiveCloudKd is that the solution was completely user-mode (!!!) due to some design flaws inside vmwp.exe (Virtual Machine Worker's process).
 - The process had no isolation so it was possible to read its memory address space from another process running with administrator privileges.
@@ -36,10 +40,6 @@ After discussing with [@gerhart_x](https://twitter.com/gerhart_x) on why LiveClo
 Thanks to [@aionescu](https://twitter.com/aionescu) who pointed out to me the existence of the Windows Hypervisor Platform API (WHVP) where I noticed the presence of the [ReadGuestPhysicalAddress()](https://docs.microsoft.com/en-us/virtualization/api/vm-dump-provider/funcs/readguestphysicaladdress) API which is now publicly available as of Windows 1803 (10.0.17134.48). This may be a good lead to create a current lean version of LiveCloudKd and re-enable on the fly memory forensics for Hyper-V Virtual Machines.
 [Simpleator](https://github.com/ionescu007/Simpleator) is a great example of an application leveraging those APIs if you want to learn more about it.
 
-## Maintainers
-- [@msuiche](https://twitter.com/msuiche)
-- [@gerhart_x](https://twitter.com/gerhart_x)
-
 ## LiveCloudKd (2019+). Still beta stage!!
 
 Added new methods for accessing guest Hyper-V VM Memory: 
@@ -58,3 +58,4 @@ For launch:
 2. Place LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 and WDK 1903)
 3. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe)
 4. Choose virtual machine (it can be Full Vm or Hyper-V container) for attaching
+
