@@ -1,0 +1,9 @@
+LIBRARY winhvr.sys
+EXPORTS
+	WinHvGetPartitionId
+	WinHvGetPartitionProperty
+	WinHvInstallIntercept
+	WinHvPostMessage
+	WinHvSignalEvent
+	WinHvAllocatePartitionSintIndex
+	WinHvAssertVirtualInterrupt

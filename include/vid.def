@@ -1,6 +1,0 @@
-LIBRARY vid.dll
-EXPORTS
-	VidGetVirtualProcessorState 
-	VidReadMemoryBlockPageRange
-	VidWriteMemoryBlockPageRange
-	VidTranslateGvaToGpa
