@@ -1,4 +1,4 @@
-// hvmm.c : implementation of the Hyper-V Virtual Machines based on LiveCloudKdSdk
+ // hvmm.c : implementation of the Hyper-V Virtual Machines based on LiveCloudKdSdk
 // Please refer to the hvmm/ folder for more information or its original repository:
 // https://github.com/comaeio/LiveCloudKd
 //
@@ -12,7 +12,7 @@
 // Author: Matt Suiche, msuiche@comae.com
 //
 
-#include "device_hvmm.h"
+#include "leechcore_device_hvmm.h"
 
 READ_MEMORY_METHOD g_MemoryReadInterfaceType = ReadInterfaceHvmmDrvInternal;
 WRITE_MEMORY_METHOD g_MemoryWriteInterfaceType = WriteInterfaceHvmmDrvInternal;
@@ -59,7 +59,12 @@ BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx)
     ULONG VmId;
 
         wprintf(L"\n"
-				L"   Microsoft Hyper-V Virtual Machine plugin 0.2.20200803 for MemProcFS (by Ulf Frisk).\n"
+				L"   Microsoft Hyper-V Virtual Machine plugin 0.2.20200808 for MemProcFS (by Ulf Frisk).\n"
+				L"\n"
+				L"   plugin parameters:\n"
+				L"      hvmm://id=<vm id number>\n"
+				L"      hvmm://listvm\n"
+				L"   Example: MemProcFS.exe -device hvmm://listvm\n"	
 				L"\n");
 
 
@@ -81,7 +86,7 @@ BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx)
         wprintf(L"   Virtual Machines:\n");
         if (PartitionCount == 0)
         {
-            wprintf(L"ERROR:    --> No virtual machines running.\n");
+            wprintf(L"   ERROR:    --> No virtual machines running.\n");
             return FALSE;
         }
 
@@ -93,23 +98,37 @@ BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx)
 			SdkGetData(Partitions[i], HvddPartitionId, &PartitionId);
 			SdkGetData(Partitions[i], HvddVmtypeString, &VmTypeString);
 			
-			wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X, %s)\n", i, FriendlyNameP, PartitionId, VmTypeString);
+			wprintf(L"    --> [id = %d] %s (PartitionId = 0x%I64X, %s)\n", i, FriendlyNameP, PartitionId, VmTypeString);
 		}
 
-        VmId = 0;
-        while ((VmId < '0') || (VmId > '9'))
-        {
-            wprintf(L"\n"
-                L"   Please select the ID of the virtual machine you want to play with\n"
-                L"   > ");
-            VmId = _getch();
-        }
-        VmId = VmId - 0x30;
-        wprintf(L"%d\n", VmId);
+		if (ctx->ListVm)
+		{
+			wprintf(L"   ListVM command was executed\n");
+			return FALSE;
+		}
 
-        if ((VmId + 1) > PartitionCount)
+		VmId = 0;
+
+		if (ctx->VmidPreselected == TRUE)
+		{
+			VmId = ctx->Vmid;
+		}
+		else
+		{
+			while ((VmId < '0') || (VmId > '9'))
+			{
+				wprintf(L"\n"
+					L"   Please select the ID of the virtual machine you want to play with\n"
+					L"   > ");
+				VmId = _getch();
+			}
+			VmId = VmId - 0x30;
+			Green(L"    %d\n", VmId);
+		}	
+
+        if (((ULONG64)VmId + 1) > PartitionCount)
         {
-            wprintf(L"ERROR:    The virtual machine you selected do not exist.\n");
+            wprintf(L"ERROR:    The virtual machine you selected do not exist. Vmid = %d\n", VmId);
             return FALSE;
         }
 

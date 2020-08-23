@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
+    <ClInclude Include="leechcore_device_hvmm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="leechcore_device_hvmm.h">
+    <ClInclude Include="..\LeechCore\leechcore\leechcore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

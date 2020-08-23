@@ -18,6 +18,7 @@
 #include "leechcore_device.h"
 #include "util.h"
 #include "leechcore_device_hvmm.h"
+#include "shlwapi.h"
 
 
 //-----------------------------------------------------------------------------
@@ -154,6 +155,100 @@ VOID DeviceHVMM_SvcClose()
     }
 }
 
+BOOL IsDigital(PLC_CONTEXT ctxLC, PCHAR str, ULONG64 len)
+{
+    for (ULONG i = 0; i < len; i++)
+    {
+        if ((str[i] < '0') || (str[i] > '9'))
+        {
+            lcprintf(ctxLC,
+                "DEVICE: ERROR: vmid is not integer: %s\n",
+                str);
+            return FALSE;
+        }       
+    }
+    
+    return TRUE;
+}
+
+BOOL DeviceHVMM_CheckParams(_In_ PLC_CONTEXT ctxLC)
+{
+    ULONG64 uVmidLength = 0;
+    CHAR szVmid[10] = { 0 };
+    //ULONG uVmid = 0;
+    PCHAR pVmid = NULL;
+    PCHAR pDelim = NULL;
+    PCHAR pListVm = NULL;
+    BOOLEAN bResult = FALSE;
+
+    ULONG64 device_size = sizeof(HVMM_PARAM_NAME) - 1;
+    ULONG64 id_size = sizeof(ID_PARAM_NAME) - 1;
+
+    PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
+    
+    pVmid = StrStrIA(ctxLC->Config.szDevice, ID_PARAM_NAME);
+    if (pVmid)
+    {
+        pDelim = StrStrIA(pVmid, HVMM_PARAM_DELIMITER);
+
+        if (pDelim)
+        {
+            uVmidLength = pVmid - pDelim;
+            if (uVmidLength < 6)
+            {                
+                memcpy(szVmid, pVmid + id_size, uVmidLength);
+
+                if (!IsDigital(ctxLC, szVmid, uVmidLength))
+                    return FALSE;
+
+                ctx->Vmid = atoi(szVmid);
+                ctx->VmidPreselected = TRUE;
+                bResult = TRUE;
+            }
+            else
+            {
+                lcprintf(ctxLC,
+                    "DEVICE: ERROR: vmid length is too big: %d\n",
+                    uVmidLength);
+                return FALSE;
+            }
+        }
+        else
+        {           
+            uVmidLength = strlen(ctxLC->Config.szDevice) - device_size - id_size;
+            strcpy_s(szVmid, _countof(szVmid), pVmid + id_size);
+
+            if (!IsDigital(ctxLC, szVmid, uVmidLength))
+                return FALSE;
+
+            if (uVmidLength < 6)
+            {
+                ctx->Vmid = atoi(szVmid);
+                ctx->VmidPreselected = TRUE;
+                bResult = TRUE;
+            }
+            else
+            {
+                lcprintf(ctxLC,
+                    "DEVICE: ERROR: vmid length is too big: %d\n",
+                    uVmidLength);
+                return FALSE;
+            }
+        }
+    }
+
+    pListVm = StrStrIA(ctxLC->Config.szDevice, LISTVM_PARAM_NAME);
+
+    if (pListVm)
+    {
+        ctx->ListVm = TRUE;
+        bResult = TRUE;
+    }
+       
+
+    return bResult;
+}
+
 /*
 * Create the LiveCloudKd kernel driver loader service and load the kernel driver
 * into the kernel. Upon fail it's guaranteed that no lingering service exists.
@@ -168,24 +263,21 @@ BOOL DeviceHVMM_SvcStart(_In_ PLC_CONTEXT ctxLC)
     FILE* pDriverFile = NULL;
     HMODULE hModuleLeechCore;
 
+    //getchar();
+
     SC_HANDLE hSCM = 0, hSvcLiveCloudKd = 0;
 
     // 1: verify that driver file exists.
     if ((g_MemoryReadInterfaceType == ReadInterfaceHvmmDrvInternal) || (g_MemoryReadInterfaceType == ReadInterfaceWinHv))
     {
-        if (!_strnicmp("hvmm://", ctxLC->Config.szDevice, 7)) {
-            strcat_s(szDriverFile, _countof(szDriverFile), ctxLC->Config.szDevice + 7);
-        }
-        else {
-            hModuleLeechCore = LoadLibraryA("leechcore.dll");
-            // NB! defaults to locating 'hvvm.sys' relative to the loaded
-            // 'leechcore.dll' - if unable to locate library (for whatever reason)
-            // defaults will be to try to loade relative to executable (NULL).
-            Util_GetPathLib(szDriverFile);
-            if (hModuleLeechCore) { FreeLibrary(hModuleLeechCore); }
-            strcat_s(szDriverFile, _countof(szDriverFile), DEVICEHVMM_DRIVERFILE);
-        }
 
+        hModuleLeechCore = LoadLibraryA("leechcore.dll");
+        // NB! defaults to locating 'hvmm.sys' relative to the loaded
+        // 'leechcore.dll' - if unable to locate library (for whatever reason)
+        // defaults will be to try to loade relative to executable (NULL).
+        Util_GetPathLib(szDriverFile);
+        if (hModuleLeechCore) { FreeLibrary(hModuleLeechCore); }
+        strcat_s(szDriverFile, _countof(szDriverFile), DEVICEHVMM_DRIVERFILE);
 
         if (fopen_s(&pDriverFile, szDriverFile, "rb") || !pDriverFile) {
             lcprintf(ctxLC,
@@ -291,7 +383,8 @@ BOOL DeviceHVMM_GetMemoryInformation(_Inout_ PLC_CONTEXT ctxLC)
     PDEVICE_CONTEXT_HVMM ctx = (PDEVICE_CONTEXT_HVMM)ctxLC->hDevice;
     DWORD i;
     // 1: retrieve information from hypervisor
-    if (HVMMStart(ctx));
+    if (!HVMMStart(ctx))
+        return FALSE;
 
     // 2: sanity checks
     if (ctx->MemoryInfo.NumberOfRuns.QuadPart > MAX_NUMBER_OF_RUNS) {
@@ -313,17 +406,18 @@ BOOL DeviceHVMM_GetMemoryInformation(_Inout_ PLC_CONTEXT ctxLC)
 }
 
 _Success_(return)
-EXPORTED_FUNCTION BOOL LcPluginCreate(_Inout_ PLC_CONTEXT ctxLC)
+EXPORTED_FUNCTION BOOL LcPluginCreate(_Inout_ PLC_CONTEXT ctxLC, _Out_opt_ PPLC_CONFIG_ERRORINFO ppLcConfidErrorInfo)
 {
     BOOL result;
     PDEVICE_CONTEXT_HVMM ctx;
+
+    ctx = (PDEVICE_CONTEXT_HVMM)LocalAlloc(LMEM_ZEROINIT, sizeof(DEVICE_CONTEXT_HVMM));
+    if (!ctx) { return FALSE; }
 
     // 1: terminate any lingering LiveCloudKd service.
     DeviceHVMM_SvcClose();
 
     // 2: initialize core context.
-    ctx = (PDEVICE_CONTEXT_HVMM)LocalAlloc(LMEM_ZEROINIT, sizeof(DEVICE_CONTEXT_HVMM));
-    if (!ctx) { return FALSE; }
 
     ctxLC->hDevice = (HANDLE)ctx;
     // set callback functions and fix up config
@@ -336,17 +430,36 @@ EXPORTED_FUNCTION BOOL LcPluginCreate(_Inout_ PLC_CONTEXT ctxLC)
     ctxLC->pfnWriteScatter = DeviceHVMM_WriteMEM;
     ctxLC->pfnGetOption = DeviceHVMM_GetOption;
 
+    if (!DeviceHVMM_CheckParams(ctxLC)) {
+
+        LPSTR szUserText = "Please select the ID of the virtual machine\n";
+        DWORD cbStructErrorInfo = sizeof(LC_CONFIG_ERRORINFO) + (DWORD)strlen(szUserText) + 1;
+
+        PLC_CONFIG_ERRORINFO pErrorInfo = LocalAlloc(LMEM_ZEROINIT, cbStructErrorInfo);
+
+        if (pErrorInfo) {
+            pErrorInfo->dwVersion = LC_CONFIG_ERRORINFO_VERSION;
+            pErrorInfo->cbStruct = cbStructErrorInfo;
+            pErrorInfo->fUserInputRequest = TRUE;
+            strncpy_s(pErrorInfo->szUserText, pErrorInfo->cbStruct - sizeof(LC_CONFIG_ERRORINFO), szUserText, _TRUNCATE);
+            pErrorInfo->cszUserText = (DWORD)strlen(pErrorInfo->szUserText);
+            *ppLcConfidErrorInfo = pErrorInfo;
+            //ctx->VmidPreselected = TRUE;
+            return FALSE;
+        }
+    }
+
     // 3: load hvvm kernel driver.
     result = DeviceHVMM_SvcStart(ctxLC);
     if (!result) {
-        lcprintf(ctxLC, "DEVICE: FAILED: LiveCloudKd - Failed to initialize the driver.");
+        lcprintf(ctxLC, "DEVICE: FAILED: LiveCloudKd - Failed to initialize the driver.\n");
         goto fail;
     }
 
     // 4: retrieve memory map.
     result = DeviceHVMM_GetMemoryInformation(ctxLC);
     if (!result) {
-        lcprintf(ctxLC, "DEVICE: FAILED: LiveCloudKd - Unable to parse guest memory map.");
+        lcprintf(ctxLC, "DEVICE: FAILED: LiveCloudKd - Unable to parse guest memory map.\n");
         goto fail;
     }
 
