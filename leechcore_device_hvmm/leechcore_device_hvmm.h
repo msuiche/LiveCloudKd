@@ -11,8 +11,9 @@
 #define __DEVICE_HVMM_H__
 #include "LiveCloudKdSdkHandle.h"
 #include <stdio.h>
-#include "leechcore.h"
+#include "leechcore_device.h"
 #include "conio.h"
+#include "shlwapi.h"
 
 //
 // The number of runs may vary if Dynamic Memory is enabled inside the Hyper-V virtual machine.
@@ -37,7 +38,7 @@
 #define ID_PARAM_NAME "id="
 #define HVMM_PARAM_NAME "hvmm://"
 #define LISTVM_PARAM_NAME "listvm"
-#define HVMM_PARAM_DELIMITER "&"
+#define HVMM_PARAM_DELIMITER ","
 
 typedef struct pmem_info_runs {
     __int64 start;
@@ -66,6 +67,8 @@ typedef struct tdDEVICE_CONTEXT_HVMM {
     ULONG Vmid;
     BOOLEAN VmidPreselected;
     BOOLEAN ListVm;
+    BOOLEAN RemoteMode;
+    LPWSTR szVmNamesList;
     struct PmemMemoryInfo MemoryInfo;
 } DEVICE_CONTEXT_HVMM, *PDEVICE_CONTEXT_HVMM;
 
@@ -74,7 +77,7 @@ typedef struct tdDEVICE_CONTEXT_HVMM {
 * -- result
 */
 
-BOOL HVMMStart(PDEVICE_CONTEXT_HVMM ctx);
+BOOL HVMMStart(_Inout_ PLC_CONTEXT ctxLC);
 BOOLEAN HVMM_ReadFile(
 	ULONG64 PartitionHandle,
     UINT64 StartPosition, 
@@ -88,5 +91,7 @@ BOOLEAN HVMM_WriteFile(
 	PVOID lpBuffer,
 	UINT64 nNumberOfBytesToRead
 );
+
+BOOL IsDigital(PLC_CONTEXT ctxLC, PCHAR str, ULONG64 len);
 
 #endif
