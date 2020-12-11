@@ -23,3 +23,7 @@ For launch:
 1. Place LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 - 20H1).
 2. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe).
 3. Choose virtual machine (Full VM only) for inspection.
+
+LiveCloudKd is more perfomanced, then LiveKd from Sysinternals Suite, at the time of release:
+
+![](./image02.png)
