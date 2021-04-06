@@ -13,7 +13,7 @@ Methods for accessing guest Hyper-V VM Memory:
 	ReadInterfaceHvmmDrvInternal - read data directly from kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading method is ReadInterfaceHvmmDrvInternal.
 	
 	WriteInterfaceWinHv - uses Hyper-V hypercall for writing to guest OS memory.
-	WriteInterfaceHvmmDrvInternal - read data directly from kernel memory. Much faster, then ReadInterfaceWinHv, but uses undocument structures). See description of -m option. Default reading method is WriteInterfaceHvmmDrvInternal.
+	WriteInterfaceHvmmDrvInternal - write data directly to kernel memory. Much faster, then WriteInterfaceWinHv, but uses undocument structures). See description of -m option. Default writing method is WriteInterfaceHvmmDrvInternal.
 	
 
 Tested on Full VM from in Windows 10, Windows Server 2016, Windows Server 2019 and Windows Server 2022 preview.
