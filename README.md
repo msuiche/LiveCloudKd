@@ -27,3 +27,6 @@ For launch:
 LiveCloudKd is more perfomanced, then LiveKd from Sysinternals Suite, at the time of release:
 
 ![](./image02.png)
+
+Project uses diStorm3 project by Gil Dabah (https://twitter.com/_arkon) 
+https://github.com/gdabah/distorm
