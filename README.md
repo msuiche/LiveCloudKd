@@ -16,7 +16,7 @@ Methods for accessing guest Hyper-V VM Memory:
 	WriteInterfaceHvmmDrvInternal - write data directly to kernel memory. Much faster, then WriteInterfaceWinHv, but uses undocument structures). See description of -m option. Default writing method is WriteInterfaceHvmmDrvInternal.
 	
 
-Tested on Full VM from in Windows 10, Windows Server 2016, Windows Server 2019, Windows 11 Preview and Windows Server 2022 preview.
+Tested on Full VM from in Windows Server 2016, Windows Server 2019, Windows Server 2022, Windows 10 and Windows 11 Preview
 
 For launch:
 
