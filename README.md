@@ -28,5 +28,5 @@ LiveCloudKd is more perfomanced, then LiveKd from Sysinternals Suite, at the tim
 
 ![](./image02.png)
 
-Project uses diStorm3 library (BSD license) by Gil Dabah (https://twitter.com/_arkon) 
+Project uses diStorm3 library (BSD license) by [Gil Dabah](https://twitter.com/_arkon) 
 https://github.com/gdabah/distorm
