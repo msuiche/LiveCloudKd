@@ -3,11 +3,11 @@ This is fork of LiveCloudKd early developped by Matt Suiche (@msuiche) - https:/
 ## LiveCloudKd (2022).
 
 Memory access to full Hyper-V VM memory is stable enough, therefore LiveCloudKd and Hyper-V Virtual Machine plugin for MemProcFS was released as stable version.
-https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20210814/LiveCloudKd.v2.5.5.20220419-release.zip
+https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip
 
 LiveCloudKd can read and write memory to Hyper-V guest OS using kd.exe from Windows SDK (WDK)
 
-https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220419/leechcore_hyperv_plugin_19.04.2022.zip
+https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220914/leechcore_hyperv_plugin_14.09.2022.zip
 
 Methods for accessing guest Hyper-V VM Memory: 
 
