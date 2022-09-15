@@ -22,7 +22,7 @@ Tested on Full VM from in Windows Server 2016, Windows Server 2019, Windows Serv
 
 For launch:
 
-1. Place LiveCloudKd.exe, hvlib.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 - 21H2).
+1. Place LiveCloudKd.exe, hvlib.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 - 22H2).
 2. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2022 runtime libraries - https://aka.ms/vs/17/release/vc_redist.x64.exe).
 3. Choose virtual machine (Full VM only) for inspection.
 
