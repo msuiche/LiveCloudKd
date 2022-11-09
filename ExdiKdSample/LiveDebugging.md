@@ -124,7 +124,6 @@ You can load standard address space modules using same commands even you inside 
 ```
 
 6. Script idt_securekernel_parse_pykd.py inside archive for demo.
-7. You can attach EXDi plugin to Windows 10X emulator, but breakpoints will bot be working because interceptions in nested virtualization mode (emulator uses it) doesn't work properly.
 
 
 You can see demo video on youtube:
@@ -137,10 +136,8 @@ You can see demo video on youtube:
 
 There are some settings can be configured through Windows Registry (see file RegParam.reg in distrib). Path HKEY_LOCAL_MACHINE\SOFTWARE\LiveCloudKd\Parameters. All params are dword, can be 0 or 1.
 
-1. ScanGuestOsImages - try to scan physical memory for MZ-signature (can be useful for Windows 10X emulator).
-2. VSMScan - enable VSM scanning for guest OS
-	
-	UseDebugApiStopProcess parameter enables DebugActiveProcess\DebugActiveProcessStop functions
+1. VSMScan - enable VSM scanning for guest OS
+2. UseDebugApiStopProcess parameter enables DebugActiveProcess\DebugActiveProcessStop functions
 
 
 # Remarks
