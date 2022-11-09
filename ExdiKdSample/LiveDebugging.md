@@ -1,33 +1,33 @@
-# Live debugging capabilities (beta stage)
+# Hyper-V live debugging
 
-LiveCloudKd EXDi module can be used for debugging Hyper-V guest OS without enable kernel debugging in bootloader.
+LiveCloudKd EXDi debugger can be used for debugging Hyper-V guest OS without enable kernel debugging in bootloader.
 
-Standard Hyper-V VM can be debugged too, but more intereseting is to debug securekernel part of Windows.
-Docker containers, running in Hyper-V isolation mode, and Windows Sandbox can be debugged too, but EXDi module has some syncs problems in multi CPU environment (because all function's calls to EXDi go from blackboxing dbgeng.dll). EXDi works, but unexpected interruptions may be catched during tracing.
+Can be useful for debug Hyper-V VM with enabled HVCI and securekernel.
+
+Working with guest Windows Server 2022 and Windows 11, including preview builds (on November 2022)
+
+For debugging you need to use Windows Server 2019 (August 2020 updates - en_windows_server_2019_updated_aug_2020_x64_dvd_f4bab427.iso).
+It is good to use VMware Workstation for it.
 
 # VSM\VBS activating for securekernel debugging
 
-Read official Microsoft document first [Enable virtualization-based protection of code integrity](https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
+Read official Microsoft document first [Enable virtualization-based protection or code integrity](https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
 
 It was enough for me to enable VBS in group policy editor.
 
 For guest VM don't forget enable SecureBoot option. 
 Check Get-VMSecurity -VMName <VMName> output. VirtualizationBasedSecurityOptOut must be $false.
 	
-Don't enable nested virtualization support. VBS in guest Hyper-V VM works without guest hypervisor. More than - nested virtualization and VSM are incompatible together (for Windows 10, build 1909 and Windows Server 2019, at least).
-Official doc (mentioned above) said: "HVCI and nested virtualization can be enabled at the same time", but i get false VBS starting result in my test lab, when hypervisorlaunchtype option in bcdedit was auto.
-
+Don't enable nested virtualization support for guest OS. VBS in guest Hyper-V VM works without guest hypervisor.
 
 # Installation
 
 EXDi is used for integration custom debugging engines with WinDBG.
 
 LiveCloudKDExdi plugin in live debugging mode works with Hyper-V on Windows Server 2019 and Windows 10 20H1 (19041) as host OS. Guest OS can be various. 
-It must work on Windows 10, build 1909, but i didn't test it.
-Also EXDi plugin was tested on Windows 20H2 fast ring build (19569.1000.amd64fre.rs_prerelease.200214-1419) with Windows 10X emulator (but there is no symbols for guest Windows 10X ntoskrnl.exe on 08 march 2020 date)
 
-1. Extract all files to WinDBG x64 10.0.1903 install directory (installer can be found in Windows SDK 10.0.18362.0 or WDK for Windows 10, version 1903)
-2. Install Visual Studio 2019 runtime libraries - https://aka.ms/vs/15/release/vc_redist.x64.exe 
+1. Extract all files to WinDBG x64 10.0.22621 install directory (installer can be found in Windows SDK 11 22H2)
+2. Install Visual Studio 2022 runtime libraries - https://aka.ms/vs/17/release/vc_redist.x64.exe 
 3. Register ExdiKdSample.dll using "regsvr32.exe ExdiKdSample.dll" command
 4. Don't forget configure symbols path for WinDBG as usual:
 
@@ -39,13 +39,13 @@ setx /m _NT_SYMBOL_PATH SRV*C:\Symbols*https://msdl.microsoft.com/download/symbo
 
 # Start
 
-1. Start LiveCloudKd with /l option: 
+1. Start WinDBG with EXDi plugin: 
 
 ```
-livecloudkd.exe /l /m 1 /v 2 
+windbg -d -v -kx exdi:CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
 ```
 
-It automatically launches WinDBG with EXDi interface in live debugging mode using hvmm.sys driver and max logging mode.
+It automatically launches WinDBG with EXDi interface in live debugging mode using hvmm.sys driver.
 
 2. You can see working WinDBG and separate logging windows:
 
@@ -74,7 +74,7 @@ to field.
 
 # Live debugging usage
 
-1 CPU for guest OS for live debugging is preferrable. MultiCPU version was developped recently and was't test enough (the most of tests was done on Windows 10X emulator)
+1 CPU for guest OS for live debugging is preferrable.
 Experimented multi-CPU debugging was added. For successfull debugging you need set Debug-Event Filters->Break instruction exception to Handle->Not Handle, and Execution->Output. 
 
 Set breakpoint using "bp" command, press "Run", wait until breakpoint was triggered. You can set 0x1000 breakpoints now. It is software-like breakpoints, and not limited. You can use single step command.
@@ -100,6 +100,11 @@ Search images load addresses in pattern:
 The image at <module_base_address> is securekernel.exe
 The image at <module_base_address> is SKCI.dll
 The image at <module_base_address> is cng.sys 
+
+Also
+
+Found DLL import descriptor for ext-ms-win-ntos-ksr-l1-1-0.dll, function address vector at 0xfffff8068882c5c8
+Found DLL import descriptor for ext-ms-win-ntos-vmsvc-l1-1-0.dll, function address vector at 0xfffff8068882c5d8
 ```
 
 ![](./images/EXDI8.png)
@@ -126,6 +131,7 @@ You can see demo video on youtube:
 
 1. Debugging Hyper-V Windows Server 2019 guest OS using LiveCloudKd EXDI plugin - https://youtu.be/_8rQwB-ESlk
 2. Microsoft Windows Server 2019 securekernel live debugging using WinDBG EXDi LiveCloudKd plugin - https://youtu.be/tRLQwsJQ-hU
+3. Debugging Windows 11 25140 guest OS using LiveCloudKd EXDI plugin - https://www.youtube.com/watch?v=0VIVc0IsfRk
 
 # Settings
 
@@ -133,12 +139,6 @@ There are some settings can be configured through Windows Registry (see file Reg
 
 1. ScanGuestOsImages - try to scan physical memory for MZ-signature (can be useful for Windows 10X emulator).
 2. VSMScan - enable VSM scanning for guest OS
-3. UseDebugApiStopProcess - core applications, which manage container like Windows Sandbox and WDAG, must be be stopped in SuspendVm operation (otherwise they switch on vmwp.exe and guest's cpus after manual stopping)
-
-	2 methods are used for that:
-	
-		- NtResumeProcess\NtSuspendProcess functions
-		- DebugActiveProcess\DebugActiveProcessStop functions (need additional thread for it)
 	
 	UseDebugApiStopProcess parameter enables DebugActiveProcess\DebugActiveProcessStop functions
 
@@ -152,7 +152,7 @@ There are some settings can be configured through Windows Registry (see file Reg
 	4 - Resume partition.
 ```
 	
-	NtSuspendProcess and NtResumeProcess are using for manage of state vmwp.exe process. It is not need for Windows Server 2019 (stopping of virtual cpus is enough), but need for Windows 10 (because of difference in CPU scheduler). If something wrong, process can be resuming using Process Explorer from SysinternalsSuite.
+	NtSuspendProcess and NtResumeProcess are using for manage of state vmwp.exe process. It is not need for Windows Server 2019 (stopping of virtual cpus is enough), but need for Windows 10 host OS (because of difference in CPU scheduler). If something wrong, process can be resuming using Process Explorer from SysinternalsSuite. Recommend to use Windows Server 2019
 	
 2. Securekernel debugging in EXDi mode is unexplored feature, there are many problems can be triggered in debugging process, so first make test (you can see example on early mentioned video):
 
