@@ -149,7 +149,7 @@ There are some settings can be configured through Windows Registry (see file Reg
 	4 - Resume partition.
 ```
 	
-	NtSuspendProcess and NtResumeProcess are using for manage of state vmwp.exe process. It is not need for Windows Server 2019 (stopping of virtual cpus is enough), but need for Windows 10 host OS (because of difference in CPU scheduler). If something wrong, process can be resuming using Process Explorer from SysinternalsSuite. Recommend to use Windows Server 2019
+NtSuspendProcess and NtResumeProcess are using for manage of state vmwp.exe process. It is not need for Windows Server 2019 (stopping of virtual cpus is enough), but need for Windows 10 host OS (because of difference in CPU scheduler). If something wrong, process can be resuming using Process Explorer from SysinternalsSuite. Recommend to use Windows Server 2019
 	
 2. Securekernel debugging in EXDi mode is unexplored feature, there are many problems can be triggered in debugging process, so first make test (you can see example on early mentioned video):
 
