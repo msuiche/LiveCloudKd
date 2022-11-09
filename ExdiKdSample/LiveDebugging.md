@@ -6,7 +6,7 @@ Can be useful for debug Hyper-V VM with enabled HVCI and securekernel.
 
 Working with guest Windows Server 2022 and Windows 11, including preview builds (on November 2022)
 
-For debugging you need to use Windows Server 2019 (August 2020 updates - en_windows_server_2019_updated_aug_2020_x64_dvd_f4bab427.iso).
+For debugging you need to use Windows Server 2019 (August 2020 updates - Windows image name en_windows_server_2019_updated_aug_2020_x64_dvd_f4bab427.iso).
 It is good to use VMware Workstation for it.
 
 # VSM\VBS activating for securekernel debugging
