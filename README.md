@@ -1,6 +1,8 @@
 This is fork of LiveCloudKd early developped by Matt Suiche (@msuiche) - https://github.com/comaeio/LiveCloudKd
 
-LiveCloudKd is tool, that allows your connect to Hyper-V guest VM with kd.exe or WinDBG.exe (using EXDi plugin).
+## LiveCloudKd (2022).
+
+LiveCloudKd is tool, that allows your connect to Hyper-V guest VM with kd.exe or WinDBG.exe and WinDBG with modern UI (ex. WinDBG Preview) (using EXDi plugin).
 Tool uses Hyper-V memory manager plugin for operations with Hyper-V memory.
 
 It has additional options in compare with LiveKd from Sysinternals Suite:
@@ -10,14 +12,10 @@ It has additional options in compare with LiveKd from Sysinternals Suite:
 3. Supports of Hyper-V VM with nested option enalbed on Intel based CPU
 4. Support multilanguage OS.
 
-## LiveCloudKd (2022).
 
-Memory access to full Hyper-V VM memory is stable enough, therefore LiveCloudKd and Hyper-V Virtual Machine plugin for MemProcFS was released as stable version.
 https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip - LiveCloudKd
 https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220914/leechcore_hyperv_plugin_14.09.2022.zip - Hyper-V Virtual Machine plugin for MemProcFS
 https://github.com/gerhart01/Hyper-V-Tools/releases/download/1.0.20221109/Hyper-V.Memory.Manager.plugin.for.volatility.v1.0.20221109.zip - Hyper-V Memory Manager plugin for volatility
-
-LiveCloudKd can read and write memory to Hyper-V guest OS using kd.exe from Windows SDK (WDK)
 
 Methods for accessing guest Hyper-V VM Memory: 
 
