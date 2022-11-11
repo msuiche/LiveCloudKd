@@ -1,5 +1,7 @@
 # Hyper-V live debugging
 
+[Actual distributive](https://github.com/gerhart01/LiveCloudKd/releases/download/v1.0.22021109/LiveCloudKd.EXDi.debugger.v1.0.22021109.zip)
+
 LiveCloudKd EXDi debugger can be used for debugging Hyper-V guest OS without enable kernel debugging in bootloader.
 
 Can be useful for debug Hyper-V VM with enabled HVCI and securekernel.
