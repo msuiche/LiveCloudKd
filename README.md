@@ -12,9 +12,9 @@ Tool has additional options in compare with LiveKd from Sysinternals Suite:
 3. Supports of Hyper-V VM with nested option enalbed on Intel based CPU
 4. Support multilanguage OS.
 
-LiveCloudKd - [Link](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip) 
-Hyper-V Virtual Machine plugin for MemProcFS - [Link](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220914/leechcore_hyperv_plugin_14.09.2022.zip)
-Hyper-V Memory Manager plugin for volatility - [Link](https://github.com/gerhart01/Hyper-V-Tools/releases/download/1.0.20221109/Hyper-V.Memory.Manager.plugin.for.volatility.v1.0.20221109.zip)   
+LiveCloudKd. [Link](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip)   
+Hyper-V Virtual Machine plugin for MemProcFS. [Link](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220914/leechcore_hyperv_plugin_14.09.2022.zip)  
+Hyper-V Memory Manager plugin for volatility. [Link](https://github.com/gerhart01/Hyper-V-Tools/releases/download/1.0.20221109/Hyper-V.Memory.Manager.plugin.for.volatility.v1.0.20221109.zip)     
 
 Methods for accessing guest Hyper-V VM Memory: 
 
