@@ -9,7 +9,7 @@ Tool has additional options in compare with LiveKd from Sysinternals Suite:
 
 1. Write capabilities (you can write to Hyper-V VM in virtual and physical address space using native WinDBG Commands)
 2. More performance.
-3. Support of Hyper-V VM with nested option enalbed on Intel based CPU
+3. Support Hyper-V VM with nested option enabled on Intel based CPU
 4. Support multilanguage OS.
 
 LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip)     
