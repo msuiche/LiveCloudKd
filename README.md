@@ -27,9 +27,9 @@ Methods for accessing guest Hyper-V VM Memory:
 
 Tested on full Windows Server 2016, Windows Server 2019, Windows Server 2022, Windows 10 and Windows 11 virtual machines
 
-Configure symbols:
+Configure symbol path:
 
-```
+``` 
 mkdir C:\Symbols
 compact /c /i /q /s:C:\Symbols
 setx /m _NT_SYMBOL_PATH SRV*C:\Symbols*https://msdl.microsoft.com/download/symbols
