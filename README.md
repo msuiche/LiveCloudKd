@@ -1,4 +1,4 @@
-This is fork of LiveCloudKd early developed by Matt Suiche [@msuiche](https://www.twitter.com/msuiche) - https://github.com/comaeio/LiveCloudKd
+This is fork of LiveCloudKd early developed by Matt Suiche [@msuiche](https://www.twitter.com/msuiche) - https://github.com/msuiche/LiveCloudKd
 
 ## LiveCloudKd (2022).
 
