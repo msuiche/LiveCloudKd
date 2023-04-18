@@ -5,14 +5,18 @@ This is fork of LiveCloudKd early developed by Matt Suiche [@msuiche](https://ww
 LiveCloudKd is tool, that allows you connect to Hyper-V guest VM with kd.exe (or WinDBG.exe and WinDBG with modern UI (ex. WinDBG Preview) using EXDi plugin).
 Tool uses Hyper-V memory manager plugin for operations with Hyper-V memory.
 
-Tool has additional options in compare with LiveKd from Sysinternals Suite:
+Tool has additional options in compare with LiveKd from Microsoft Sysinternals Suite:
 
 1. Write capabilities (you can write to Hyper-V VM in virtual and physical address space using native WinDBG Commands)
-2. More performance.
+2. More performance
 3. Support Hyper-V VM with nested option enabled on Intel based CPU
-4. Support multilanguage OS.
+4. Support multilanguage OS
 
-LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip)     
+LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220911/LiveCloudKd.v2.5.5.20220911-release.zip)
+
+LiveCloudKd based on hvlib.dll library (Hyper-V memory manager plugin). Other tools, that was developed using this library:
+
+LiveCloudKd EXDi debugger. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v1.0.22021109/LiveCloudKd.EXDi.debugger.v1.0.22021109.zip). [Readme](https://github.com/gerhart01/LiveCloudKd/blob/master/ExdiKdSample/LiveDebugging.md)    
 Hyper-V Virtual Machine plugin for MemProcFS. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220914/leechcore_hyperv_plugin_14.09.2022.zip)  
 Hyper-V Memory Manager plugin for volatility. [Download](https://github.com/gerhart01/Hyper-V-Tools/releases/download/1.0.20221109/Hyper-V.Memory.Manager.plugin.for.volatility.v1.0.20221109.zip)  
 
@@ -25,7 +29,7 @@ Methods for accessing guest Hyper-V VM Memory:
 	WriteInterfaceHvmmDrvInternal - write data directly to kernel memory. Faster, then WriteInterfaceWinHv, but uses undocument structures). See description of -m option. Default writing method is WriteInterfaceHvmmDrvInternal.
 	
 
-Tested on full Windows Server 2016, Windows Server 2019, Windows Server 2022, Windows 10 and Windows 11 virtual machines
+Tested on full Windows Server 2016, Windows Server 2019, Windows Server 2022, Windows 10 and Windows 11 operation system
 
 Configure symbol path:
 
