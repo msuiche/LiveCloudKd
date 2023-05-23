@@ -2,7 +2,7 @@ This is fork of LiveCloudKd early developed by Matt Suiche [@msuiche](https://ww
 
 ## LiveCloudKd (2023).
 
-LiveCloudKd is tool, that allows you connect to Hyper-V guest VM with kd.exe (or WinDBG.exe and WinDBG with modern UI (ex. WinDBG Preview). Also you can you Hvmm EXDi plugin for attaching to Hyper-V VM
+LiveCloudKd is tool, that allows you connect to Hyper-V guest VM with kd.exe (or WinDBG.exe and WinDBG with modern UI (ex. WinDBG Preview). Also you can you Hvmm EXDi plugin for attaching to Hyper-V VM  
 Tool uses Hyper-V memory manager plugin for operations with Hyper-V memory.
 
 Tool has additional options in compare with LiveKd from Microsoft Sysinternals Suite:
@@ -12,8 +12,8 @@ Tool has additional options in compare with LiveKd from Microsoft Sysinternals S
 3. Support Hyper-V VM with nested option enabled on Intel based CPU
 4. Support multilanguage OS
 
-LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20230530/LiveCloudKd.v2.5.5.20220530-release.zip)
-Contains EXDi plugin
+LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20230530/LiveCloudKd.v2.5.5.20220530-release.zip)  
+Contains EXDi plugin  
 
 ![](images/image03.png)
 
