@@ -1,6 +1,6 @@
-This is description for Python API wrappers for hvlib.dll library
-Main library file is hvlib.py.
-See Example.py for detailed information - [Example.py](https://github.com/gerhart01/LiveCloudKd/blob/master/LiveCloudKdPy/Example.py)
+This is description for Python API wrappers for hvlib.dll library  
+Main library file is hvlib.py.  
+See Example.py for detailed information - [Example.py](https://github.com/gerhart01/LiveCloudKd/blob/master/LiveCloudKdPy/Example.py)  
 
 Also there is good example of Python API wrappers usage is Hyper-V memory manager plugin for [volatility plugin](https://github.com/gerhart01/Hyper-V-Tools/tree/main/Plugin_for_volatility)
 
@@ -17,7 +17,7 @@ Library installation:
 
 Copy hvlib.py, hvlib.dll and hvmm.sys to <python_dir>\Lib\site-packages (f.e. C:\Python311x64\Lib\site-packages). 
 If you use some python virtual environment plugins, you need to copy files inside it.
-For example to "venv\Lib\site-packages" for virtualenv
+For example to "<dir>\venv\Lib\site-packages" for virtualenv
 
 # 1. GetPreferredSettings 
    
