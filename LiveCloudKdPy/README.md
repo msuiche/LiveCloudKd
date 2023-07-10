@@ -15,7 +15,7 @@ Also there is good example of Python API wrappers usage is Hyper-V memory manage
 
 Library installation:
 
-Copy hvlib.py, hvlib.dll and hvmm.sys to <python_dir>\Lib\site-packages (f.e. C:\Python311x64\Lib\site-packages). 
+Copy hvlib.py, hvlib.dll and hvmm.sys from [latest](https://github.com/gerhart01/LiveCloudKd/releases) LiveCloudKd distributive to <python_dir>\Lib\site-packages (f.e. C:\Python311x64\Lib\site-packages). 
 If you use some python virtual environment plugins, you need to copy files inside it.
 For example to "<dir>\venv\Lib\site-packages" for virtualenv
 
