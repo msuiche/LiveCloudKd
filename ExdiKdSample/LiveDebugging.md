@@ -2,23 +2,28 @@
 
 [Actual distributive](https://github.com/gerhart01/LiveCloudKd/releases/download/v1.0.22021109/LiveCloudKd.EXDi.debugger.v1.0.22021109.zip)
 
-LiveCloudKd EXDi debugger can be used for debugging Hyper-V guest OS without enable kernel debugging in bootloader.
+LiveCloudKd EXDi debugger can be used for debugging Hyper-V guest OS without enable kernel debugging in Windows bootloader.
 
-Can be useful for debug Hyper-V VM with enabled HVCI and securekernel.
+It can be useful for debug Hyper-V VM with VBS and HVCI enabled.
 
 Working with guest Windows Server 2022 and Windows 11, including preview builds (on November 2022)
 
 For debugging you need to use Windows Server 2019 (August 2020 updates - Windows image name en_windows_server_2019_updated_aug_2020_x64_dvd_f4bab427.iso).
-It is good to use VMware Workstation for it.
+It is good to use VMware Workstation for itm but you can try use Hyper-V with Windows Server 2019 as guest OS and Windows 11 as nested guest OS.
 
 # VSM\VBS activating for securekernel debugging
 
-Read official Microsoft document first [Enable virtualization-based protection or code integrity](https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
+First read official Microsoft document [Enable virtualization-based protection or code integrity](https://docs.microsoft.com/en-us/windows/security/threat-protection/device-guard/enable-virtualization-based-protection-of-code-integrity)
 
-It was enough for me to enable VBS in group policy editor.
+It was enough to enable VBS in group policy editor.
 
-For guest VM don't forget enable SecureBoot option. 
-Check Get-VMSecurity -VMName <VMName> output. VirtualizationBasedSecurityOptOut must be $false.
+For guest VM don't forget enable SecureBoot option with TPM support (for Windows 11). 
+
+Check
+```
+Get-VMSecurity -VMName <VMName>
+```
+output. VirtualizationBasedSecurityOptOut must be $false
 	
 Don't enable nested virtualization support for guest OS. VBS in guest Hyper-V VM works without guest hypervisor.
 
@@ -28,10 +33,14 @@ EXDi is used for integration custom debugging engines with WinDBG.
 
 LiveCloudKDExdi plugin in live debugging mode works with Hyper-V on Windows Server 2019 and Windows 10 20H1 (19041) as host OS. Guest OS can be various. 
 
-1. Extract all files to WinDBG x64 10.0.22621 install directory (installer can be found in Windows SDK 11 22H2)
+1. Extract all files to WinDBG x64 10.0.22621 install directory (installer can be found in Windows SDK 11 22H2) or WinDBG with modern UI (ex. Preview)
 2. Install Visual Studio 2022 runtime libraries - https://aka.ms/vs/17/release/vc_redist.x64.exe 
-3. Register ExdiKdSample.dll using "regsvr32.exe ExdiKdSample.dll" command
-4. Don't forget configure symbols path for WinDBG as usual:
+3. Register ExdiKdSample.dll using
+   ```
+   regsvr32.exe ExdiKdSample.dll
+   ```
+   command
+5. Don't forget configure symbols path for WinDBG as usual:
 
 ```
 mkdir C:\Symbols
@@ -64,10 +73,14 @@ but before you need create HKEY_LOCAL_MACHINE\SOFTWARE\LiveCloudKd\Parameters\Vm
 You can use WinDBG Preview with EXDi plugin too. But WinDBG Preview has bug with automatically starting EXDi plugin from command line, therefore it must be start manually.
 
 4. Create HKEY_LOCAL_MACHINE\SOFTWARE\LiveCloudKd\Parameters\VmId, type REG_DWORD and enter position number in LiveCloudKd list [0, 1, 2]. You can see that list, if you launch LiveCloudKd without parameters. If you launch 1 VM, that parameter will be 0.
-5. Start WinDBGX, go to File-Start debugging-Attach to Kernel, open EXDi tab and paste string 
+5. You can start WinDBG with modern UI, go to File-Start debugging-Attach to Kernel, open EXDi tab and paste string 
 
 ```
 CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
+```
+or (on latest versions)
+```
+DbgX.Shell.exe -v -kx exdi:CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
 ```
 
 to field.
@@ -77,7 +90,7 @@ to field.
 # Live debugging usage
 
 1 CPU for guest OS for live debugging is preferrable.
-Experimented multi-CPU debugging was added. For successfull debugging you need set Debug-Event Filters->Break instruction exception to Handle->Not Handle, and Execution->Output. 
+Experimented multi-CPU debugging was added. For successfull debugging you need set Debug-Event Filters->Break instruction exception to Handle->Not Handle, and Execution->Output inside WinDBG. 
 
 Set breakpoint using "bp" command, press "Run", wait until breakpoint was triggered. You can set 0x1000 breakpoints now. It is software-like breakpoints, and not limited. You can use single step command.
 For debugging securekernel:
@@ -126,7 +139,6 @@ You can load standard address space modules using same commands even you inside 
 ```
 
 6. Script idt_securekernel_parse_pykd.py inside archive for demo.
-
 
 You can see demo video on youtube:
 
