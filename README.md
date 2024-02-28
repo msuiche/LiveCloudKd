@@ -14,7 +14,7 @@ Tool has additional options in compare with LiveKd from Microsoft Sysinternals S
 3. Support Hyper-V VM with nested option enabled on Intel based CPU
 4. Support multilanguage OS
 
-LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20230530/LiveCloudKd.v2.5.5.20220530-release.zip)  
+LiveCloudKd. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.6.1.20240228/LiveCloudKd.v2.6.1.20240228-release.zip)  
 Contains EXDi plugin:  
 
 ![WinDBG](images/image03.png)
@@ -23,7 +23,7 @@ Contains EXDi plugin:
 LiveCloudKd based on hvlib.dll library (Hyper-V memory manager plugin). Other tools, that were developed using this library:
 
 LiveCloudKd EXDi debugger. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v1.0.22021109/LiveCloudKd.EXDi.debugger.v1.0.22021109.zip). [Readme](https://github.com/gerhart01/LiveCloudKd/blob/master/ExdiKdSample/LiveDebugging.md)    
-Hyper-V Virtual Machine plugin for MemProcFS. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v2.5.5.20220914/leechcore_hyperv_plugin_14.09.2022.zip)  
+Hyper-V Virtual Machine plugin for MemProcFS. [Download](https://github.com/gerhart01/LiveCloudKd/releases/download/v1.2.20240228/leechcore_hyperv_plugin_28.02.2024.zip)  
 Hyper-V Memory Manager plugin for volatility. [Download](https://github.com/gerhart01/Hyper-V-Tools/releases/download/1.0.20221109/Hyper-V.Memory.Manager.plugin.for.volatility.v1.0.20221109.zip)  
 
 Methods for accessing guest Hyper-V VM memory: 
@@ -50,9 +50,10 @@ For launch:
 1. Extract LiveCloudKd.exe, hvlib.dll, hvmm.sys to WinDBG x64 folder (tested on WinDBG from WDK 1809 - 23H2) or separate folder (use /y key for specify directory with WinDBG). 
    Also LiveCloudKd can find path to WinDBG, if it was installed with Windows WDK or SDK
 2. Launch LiveCloudKd.exe with admin rights (It needs Visual Studio 2022 runtime libraries - https://aka.ms/vs/17/release/vc_redist.x64.exe).
-3. Choose virtual machine (Full VM only) for inspection.  
+3. Choose Hyper-V virtual machine for inspection.  
 
-When starting LiveCloudKd search WinDBG in next steps:
+When starting LiveCloudKd searches WinDBG in next steps:
+
 1. Standard Windows SDK installation folder (using register key)
 2. in Windows Registry HKLM\Software\LiveCloudKd\Parameters in WinDbgPath key. See RegParam.key for instance. 
 3. Set /y parameter with WinDBG path, for instance: 
@@ -61,7 +62,7 @@ When starting LiveCloudKd search WinDBG in next steps:
 LiveCloudKd /y C:\Microsoft\WinDBG
 ```
 
-4. If previous result is not success, try to run kd.exe from same folder
+4. If previous result is not successfully, LiveCloudKd tries to run kd.exe from same folder.
 
 Performance comparison with LiveKd from Sysinternals Suite, at the time of release (LiveCloudKd is more performance: about 1000 times using ReadInterfaceHvmmDrvInternal interface):
 
