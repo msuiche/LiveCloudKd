@@ -1,17 +1,16 @@
-This is MemProcFs plugin for reading Hyper-V Memory using LiveCloudKdSdk
+This is MemProcFS plugin for reading Hyper-V memory using Hyper-V Memory Manager library
 
-Sources was taken from https://github.com/ufrisk/LeechCore-plugin
+Sources was taken from https://github.com/ufrisk/LeechCore
 
 - MemProcFs can be found on https://github.com/ufrisk/MemProcFS by @ulfrisk
 
-- LiveCloudKd (original version) https://github.com/comaeio/LiveCloudKd by @msuiche
+- LiveCloudKd: https://github.com/gerhart01/LiveCloudKd
 
-For starting copy leechcore_device_hvmm.dll with LiveCloudKdSdk.dll and hvmm.sys to MemProcFs folder
+Copy leechcore_device_hvmm.dll with hvlib.dll and hvmm.sys to MemProcFS folder
 
 start MemProcFs:
-
 ```
-.\MemProcFS.exe -device hvmm -v
+MemProcFS.exe -device hvmm -v
 ```
 
 you must see something like that:
@@ -21,9 +20,3 @@ you must see something like that:
 Next you can go to M: driver and use pypykatz plugin, f.e.
 
 ![](./images/2.png)
-
-
-
-
-
-

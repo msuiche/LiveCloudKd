@@ -1,6 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <RemoteDebuggerCommand>C:\Distr\Test\MemProcFs\MemProcFs.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerCommandArguments>-device hvmm://id=0,unix -v</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerWorkingDirectory>C:\Distr\Test\MemProcFs</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerServerName>192.168.174.130</RemoteDebuggerServerName>
+    <DeploymentDirectory>C:\Distr\Test\MemProcFs</DeploymentDirectory>
+    <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
+    <RemoteDebuggerAttach>false</RemoteDebuggerAttach>
+    <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <RemoteDebuggerCommand>C:\Distr\Test\MemProcFs\MemProcFs.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerCommandArguments>-device hvmm://id=0,unix -v</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerWorkingDirectory>C:\Distr\Test\MemProcFs</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerServerName>192.168.174.130</RemoteDebuggerServerName>
+    <DeploymentDirectory>C:\Distr\Test\MemProcFs</DeploymentDirectory>
+    <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
+    <RemoteDebuggerAttach>false</RemoteDebuggerAttach>
+    <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <RemoteDebuggerCommand>
     </RemoteDebuggerCommand>
     <RemoteDebuggerCommandArguments>
@@ -14,17 +34,12 @@
     <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
     <RemoteDebuggerAttach>true</RemoteDebuggerAttach>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <RemoteDebuggerCommand>
-    </RemoteDebuggerCommand>
-    <RemoteDebuggerCommandArguments>
-    </RemoteDebuggerCommandArguments>
-    <RemoteDebuggerWorkingDirectory>
-    </RemoteDebuggerWorkingDirectory>
-    <RemoteDebuggerServerName>
-    </RemoteDebuggerServerName>
-    <DeploymentDirectory>
-    </DeploymentDirectory>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <RemoteDebuggerCommand />
+    <RemoteDebuggerCommandArguments />
+    <RemoteDebuggerWorkingDirectory />
+    <RemoteDebuggerServerName />
+    <DeploymentDirectory />
     <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
     <RemoteDebuggerAttach>true</RemoteDebuggerAttach>
   </PropertyGroup>

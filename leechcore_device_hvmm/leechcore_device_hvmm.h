@@ -9,7 +9,7 @@
 
 #ifndef __DEVICE_HVMM_H__
 #define __DEVICE_HVMM_H__
-#include "LiveCloudKdSdkHandle.h"
+#include "HvlibHandle.h"
 #include <stdio.h>
 #include "leechcore_device.h"
 #include "conio.h"
@@ -27,18 +27,22 @@
 // hvmm driver definitions
 //
 
-#define DEVICEHVMM_SERVICENAME      "hvmm"
-#define DEVICEHVMM_MEMORYFILE       "\\\\.\\hvmm"
-#define DEVICEHVMM_DRIVERFILE       "hvmm.sys"
+#define DEVICEHVMM_SERVICENAME                  "hvmm"
+#define DEVICEHVMM_OBJECT                       "\\\\.\\hvmm"
+#define DEVICEHVMM_DRIVERFILE                   "hvmm.sys"
 
 //
 // MemProcFs param values
 //
 
-#define ID_PARAM_NAME "id="
-#define HVMM_PARAM_NAME "hvmm://"
-#define LISTVM_PARAM_NAME "listvm"
-#define HVMM_PARAM_DELIMITER ","
+#define HVMM_ID_PARAM_NAME                      "id="
+#define HVMM_PARAM_NAME                         "hvmm://"
+#define HVMM_PARAM_DELIMITER                    ","
+
+#define HVMM_LISTVM_PARAM_NAME                  "listvm"
+#define HVMM_UNIX_PARAM_NAME                    "unix"
+#define HVMM_LOGLEVEL_PARAM_NAME                "loglevel"
+#define HVMM_ENUM_GUEST_OS_BUILD_PARAM_NAME     "enumguestosbuild"
 
 typedef struct pmem_info_runs {
     __int64 start;
@@ -67,6 +71,9 @@ typedef struct tdDEVICE_CONTEXT_HVMM {
     ULONG Vmid;
     BOOLEAN VmidPreselected;
     BOOLEAN ListVm;
+    BOOLEAN SimpleMemory;
+    ULONG LogLevel;
+    BOOLEAN EnumGuestOsBuild;
     BOOLEAN RemoteMode;
     LPWSTR szVmNamesList;
     struct PmemMemoryInfo MemoryInfo;
