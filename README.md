@@ -11,10 +11,7 @@ https://blogs.technet.microsoft.com/markrussinovich/2010/10/09/livekd-for-virtua
 - [@gerhart_x](https://twitter.com/gerhart_x)
 
 ## Getting Started
-# Getting Started
-
 Configure symbol path:
-
 ``` 
 mkdir C:\Symbols
 compact /c /i /q /s:C:\Symbols
