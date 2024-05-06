@@ -2028,35 +2028,60 @@ typedef union _HV_PARTITION_PRIVILEGE_MASK
         //
         // Access to virtual MSRs
         //
-        UINT64  AccessVpRunTimeMsr:1;
-        UINT64  AccessPartitionReferenceCounter:1;
-        UINT64  AccessSynicMsrs:1;
-        UINT64  AccessSyntheticTimerMsrs:1;
-        UINT64  AccessApicMsrs:1;
-        UINT64  AccessHypercallMsrs:1;
-        UINT64  AccessVpIndex:1;
-        UINT64  Reserved1:25;
+        UINT64  AccessVpRunTimeReg : 1;
+        UINT64  AccessPartitionReferenceCounter : 1;
+        UINT64  AccessSynicRegs : 1;
+        UINT64  AccessSyntheticTimerRegs : 1;
+        UINT64  AccessApicRegs : 1;
+        UINT64  AccessHypercallMsrs : 1;
+        UINT64  AccessVpIndex : 1;
+        // 4.2.2 Partition Privilege Flags
+        UINT64  AccessResetReg : 1;
+        UINT64  AccessStatsReg : 1;
+        UINT64  AccessPartitionReferenceTsc : 1;
+        UINT64  AccessGuestIdleReg : 1;
+        UINT64  AccessFrequencyRegs : 1;
+        UINT64  AccessDebugRegs : 1;
+        UINT64  AccessReenlightenmentControls : 1;
+        // Symbol Files
+        UINT64  AccessRootSchedulerReg : 1;
+        UINT64  Reserved1 : 17;
 
         //
         // Access to hypercalls
         //
-        UINT64  CreatePartitions:1;
-        UINT64  AccessPartitionId:1;
-        UINT64  AccessMemoryPool:1;
-        UINT64  AdjustMessageBuffers:1;
-        UINT64  PostMessages:1;
-        UINT64  SignalEvents:1;
-        UINT64  CreatePort:1;
-        UINT64  ConnectPort:1;
-        UINT64  AccessStats:1;
-        UINT64  IteratePhysicalHardware:1;
-        UINT64  ExposeHyperthreads:1;
-        UINT64  Debugging:1;
-        UINT64  CpuPowerManagement:1;
-        UINT64  Reserved2:19;
+        UINT64  CreatePartitions : 1;
+        UINT64  AccessPartitionId : 1;
+        UINT64  AccessMemoryPool : 1;
+        UINT64  AdjustMessageBuffers : 1;
+        UINT64  PostMessages : 1;
+        UINT64  SignalEvents : 1;
+        UINT64  CreatePort : 1;
+        UINT64  ConnectPort : 1;
+        // 4.2.2 Partition Privilege Flags
+        UINT64  AccessStats : 1;
+        UINT64  Reserved2 : 2;
+        UINT64  Debugging : 1;
+        UINT64  CpuManagement : 1;
+        UINT64  ConfigureProfiler : 1;
+        // Symbol Files
+        UINT64  AccessVpExitTracing : 1;
+        UINT64  EnableExtendedGvaRangesForFlushVirtualAddressList : 1;
+        // 4.2.2 Partition Privilege Flags
+        UINT64  AccessVsm : 1;
+        UINT64  AccessVpRegisters : 1;
+        // Symbol Files
+        UINT64  UnusedBit : 1;
+        UINT64  FastHypercallOutput : 1;
+        // 4.2.2 Partition Privilege Flags
+        UINT64  EnableExtendedHypercalls : 1;
+        UINT64  StartVirtualProcessor : 1;
+        // Symbol Files
+        UINT64  Isolation : 1;
+        UINT64  Reserved3 : 9;
     };
 
-} HV_PARTITION_PRIVILEGE_MASK, *PHV_PARTITION_PRIVILEGE_MASK;
+} HV_PARTITION_PRIVILEGE_MASK, * PHV_PARTITION_PRIVILEGE_MASK;
 
 typedef union _HV_EXPLICIT_SUSPEND_REGISTER
 {
@@ -2111,6 +2136,319 @@ typedef union _HV_X64_PENDING_INTERRUPTION_REGISTER
         UINT32 ErrorCode;
     };
 } HV_X64_PENDING_INTERRUPTION_REGISTER, *PHV_X64_PENDING_INTERRUPTION_REGISTER;
+
+//
+// Control structure that allows a hypervisor to indicate to its parent
+// hypervisor which nested enlightenment privileges are to be granted to the
+// current nested guest context.
+//
+typedef struct _HV_NESTED_ENLIGHTENMENTS_CONTROL
+{
+    union
+    {
+        UINT32 AsUINT32;
+        struct
+        {
+            UINT32 DirectHypercall : 1;
+            UINT32 VirtualizationException : 1;
+            UINT32 Reserved : 30;
+        };
+    } Features;
+    union
+    {
+        UINT32 AsUINT32;
+        struct
+        {
+            UINT32 InterPartitionCommunication : 1;
+            UINT32 Reserved : 31;
+        };
+    } HypercallControls;
+} HV_NESTED_ENLIGHTENMENTS_CONTROL, * PHV_NESTED_ENLIGHTENMENTS_CONTROL;
+
+//
+// The virtualization fault information area contains the current fault code
+// and
+// fault parameters for the VP. It is 16 byte aligned.
+//
+typedef union _HV_VIRTUALIZATION_FAULT_INFORMATION
+{
+    struct
+    {
+        UINT16 Parameter0;
+        UINT16 Reserved0;
+        UINT32 Code;
+        UINT64 Parameter1;
+    };
+} HV_VIRTUALIZATION_FAULT_INFORMATION, * PHV_VIRTUALIZATION_FAULT_INFORMATION;
+
+typedef enum
+{
+    // This reason is reserved and is not used.
+    HvVtlEntryReserved = 0,
+    // Indicates entry due to a VTL call from a lower VTL.
+    HvVtlEntryVtlCall = 1,
+    // Indicates entry due to an interrupt targeted to the VTL.
+    HvVtlEntryInterrupt = 2
+} HV_VTL_ENTRY_REASON;
+
+typedef union
+{
+    UINT64 AsUINT64;
+    struct
+    {
+        UINT64 VtlCallOffset : 12;
+        UINT64 VtlReturnOffset : 12;
+        UINT64 ReservedZ : 40;
+    };
+} HV_REGISTER_VSM_CODE_PAGE_OFFSETS;
+
+typedef struct
+{
+    // The hypervisor updates the entry reason with an indication as to why
+    // the VTL was entered on the virtual processor.
+    HV_VTL_ENTRY_REASON EntryReason;
+    // This flag determines whether the VINA interrupt line is asserted.
+    union
+    {
+        UINT8 AsUINT8;
+        struct
+        {
+            UINT8 VinaAsserted : 1;
+            UINT8 VinaReservedZ : 7;
+        };
+    } VinaStatus;
+    UINT8 ReservedZ00;
+    UINT16 ReservedZ01;
+    // A guest updates the VtlReturn* fields to provide the register values
+    // to restore on VTL return. The specific register values that are
+    // restored will vary based on whether the VTL is 32-bit or 64-bit.
+    union
+    {
+        struct
+        {
+            UINT64 VtlReturnX64Rax;
+            UINT64 VtlReturnX64Rcx;
+        };
+        struct
+        {
+            UINT32 VtlReturnX86Eax;
+            UINT32 VtlReturnX86Ecx;
+            UINT32 VtlReturnX86Edx;
+            UINT32 ReservedZ1;
+        };
+    };
+} HV_VP_VTL_CONTROL;
+
+typedef struct
+{
+    UINT32 VersionNumber;
+    UINT32 AbortIndicator;
+    UINT16 HostEsSelector;
+    UINT16 HostCsSelector;
+    UINT16 HostSsSelector;
+    UINT16 HostDsSelector;
+    UINT16 HostFsSelector;
+    UINT16 HostGsSelector;
+    UINT16 HostTrSelector;
+    UINT64 HostPat;
+    UINT64 HostEfer;
+    UINT64 HostCr0;
+    UINT64 HostCr3;
+    UINT64 HostCr4;
+    UINT64 HostSysenterEspMsr;
+    UINT64 HostSysenterEipMsr;
+    UINT64 HostRip;
+    UINT32 HostSysenterCsMsr;
+    UINT32 PinControls;
+    UINT32 ExitControls;
+    UINT32 SecondaryProcessorControls;
+    HV_GPA IoBitmapA;
+    HV_GPA IoBitmapB;
+    HV_GPA MsrBitmap;
+    UINT16 GuestEsSelector;
+    UINT16 GuestCsSelector;
+    UINT16 GuestSsSelector;
+    UINT16 GuestDsSelector;
+    UINT16 GuestFsSelector;
+    UINT16 GuestGsSelector;
+    UINT16 GuestLdtrSelector;
+    UINT16 GuestTrSelector;
+    UINT32 GuestEsLimit;
+    UINT32 GuestCsLimit;
+    UINT32 GuestSsLimit;
+    UINT32 GuestDsLimit;
+    UINT32 GuestFsLimit;
+    UINT32 GuestGsLimit;
+    UINT32 GuestLdtrLimit;
+    UINT32 GuestTrLimit;
+    UINT32 GuestGdtrLimit;
+    UINT32 GuestIdtrLimit;
+    UINT32 GuestEsAttributes;
+    UINT32 GuestCsAttributes;
+    UINT32 GuestSsAttributes;
+    UINT32 GuestDsAttributes;
+    UINT32 GuestFsAttributes;
+    UINT32 GuestGsAttributes;
+    UINT32 GuestLdtrAttributes;
+    UINT32 GuestTrAttributes;
+    UINT64 GuestEsBase;
+    UINT64 GuestCsBase;
+    UINT64 GuestSsBase;
+    UINT64 GuestDsBase;
+    UINT64 GuestFsBase;
+    UINT64 GuestGsBase;
+    UINT64 GuestLdtrBase;
+    UINT64 GuestTrBase;
+    UINT64 GuestGdtrBase;
+    UINT64 GuestIdtrBase;
+    UINT64 Rsvd1[3];
+    HV_GPA ExitMsrStoreAddress;
+    HV_GPA ExitMsrLoadAddress;
+    HV_GPA EntryMsrLoadAddress;
+    UINT64 Cr3Target0;
+    UINT64 Cr3Target1;
+    UINT64 Cr3Target2;
+    UINT64 Cr3Target3;
+    UINT32 PfecMask;
+    UINT32 PfecMatch;
+    UINT32 Cr3TargetCount;
+    UINT32 ExitMsrStoreCount;
+    UINT32 ExitMsrLoadCount;
+    UINT32 EntryMsrLoadCount;
+    UINT64 TscOffset;
+    HV_GPA VirtualApicPage;
+    HV_GPA GuestWorkingVmcsPtr;
+    UINT64 GuestIa32DebugCtl;
+    UINT64 GuestPat;
+    UINT64 GuestEfer;
+    UINT64 GuestPdpte0;
+    UINT64 GuestPdpte1;
+    UINT64 GuestPdpte2;
+    UINT64 GuestPdpte3;
+    UINT64 GuestPendingDebugExceptions;
+    UINT64 GuestSysenterEspMsr;
+    UINT64 GuestSysenterEipMsr;
+    UINT32 GuestSleepState;
+    UINT32 GuestSysenterCsMsr;
+    UINT64 Cr0GuestHostMask;
+    UINT64 Cr4GuestHostMask;
+    UINT64 Cr0ReadShadow;
+    UINT64 Cr4ReadShadow;
+    UINT64 GuestCr0;
+    UINT64 GuestCr3;
+    UINT64 GuestCr4;
+    UINT64 GuestDr7;
+    UINT64 HostFsBase;
+    UINT64 HostGsBase;
+    UINT64 HostTrBase;
+    UINT64 HostGdtrBase;
+    UINT64 HostIdtrBase;
+    UINT64 HostRsp;
+    UINT64 EptRoot;
+    UINT16 Vpid;
+    UINT16 Rsvd2[3];
+    UINT64 Rsvd3[5];
+    UINT64 ExitEptFaultGpa;
+    UINT32 ExitInstructionError;
+    UINT32 ExitReason;
+    UINT32 ExitInterruptionInfo;
+    UINT32 ExitExceptionErrorCode;
+    UINT32 ExitIdtVectoringInfo;
+    UINT32 ExitIdtVectoringErrorCode;
+    UINT32 ExitInstructionLength;
+    UINT32 ExitInstructionInfo;
+    UINT64 ExitQualification;
+    UINT64 ExitIoInstructionEcx;
+    UINT64 ExitIoInstructionEsi;
+    UINT64 ExitIoInstructionEdi;
+    UINT64 ExitIoInstructionEip;
+    UINT64 GuestLinearAddress;
+    UINT64 GuestRsp;
+    UINT64 GuestRflags;
+    UINT32 GuestInterruptibility;
+    UINT32 ProcessorControls;
+    UINT32 ExceptionBitmap;
+    UINT32 EntryControls;
+    UINT32 EntryInterruptInfo;
+    UINT32 EntryExceptionErrorCode;
+    UINT32 EntryInstructionLength;
+    UINT32 TprThreshold;
+    UINT64 GuestRip;
+    UINT32 CleanFields;
+    UINT32 Rsvd4;
+    UINT32 SyntheticControls;
+    union
+    {
+        UINT32 AsUINT32;
+        struct
+        {
+            UINT32 NestedFlushVirtualHypercall : 1;
+            UINT32 MsrBitmap : 1;
+            UINT32 Reserved : 30;
+        };
+    } EnlightenmentsControl;
+    UINT32 VpId;
+    UINT64 VmId;
+    UINT64 PartitionAssistPage;
+    UINT64 Rsvd5[4];
+    UINT64 GuestBndcfgs;
+    UINT64 Rsvd6[7];
+    UINT64 XssExitingBitmap;
+    UINT64 EnclsExitingBitmap;
+    UINT64 Rsvd7[6];
+} HV_VMX_ENLIGHTENED_VMCS, *PHV_VMX_ENLIGHTENED_VMCS;
+
+//
+// Format of the APIC assist page.
+//
+#define HV_VIRTUAL_APIC_NO_EOI_REQUIRED 0x0
+
+typedef union _VIRTUAL_VP_ASSIST_PAGE_PFN
+{
+    UINT64 AsUINT64;
+    struct
+    {
+        UINT64 Enable : 1;
+        UINT64 Reserved : 11;
+        UINT64 PFN : 52;
+    };
+} VIRTUAL_VP_ASSIST_PAGE_PFN, * PVIRTUAL_VP_ASSIST_PAGE_PFN;
+
+typedef union _HV_VIRTUAL_APIC_ASSIST
+{
+    UINT32 ApicFlags;
+    struct
+    {
+        UINT32 NoEOIRequired : 1;
+    };
+} HV_VIRTUAL_APIC_ASSIST, * PHV_VIRTUAL_APIC_ASSIST;
+
+typedef union _HV_VP_ASSIST_PAGE
+{
+    struct
+    {
+        //
+        // APIC assist for optimized EOI processing.
+        //
+        HV_VIRTUAL_APIC_ASSIST ApicAssist;
+        UINT32 ReservedZ0;
+        //
+        // VP-VTL control information
+        //
+        HV_VP_VTL_CONTROL VtlControl;
+        HV_NESTED_ENLIGHTENMENTS_CONTROL NestedEnlightenmentsControl;
+        BOOLEAN EnlightenVmEntry;
+        UINT8 ReservedZ1[7];
+        HV_GPA CurrentNestedVmcs;
+        BOOLEAN SyntheticTimeUnhaltedTimerExpired;
+        UINT8 ReservedZ2[7];
+        //
+        // VirtualizationFaultInformation must be 16 byte aligned.
+        //
+        HV_VIRTUALIZATION_FAULT_INFORMATION VirtualizationFaultInformation;
+    };
+    UINT8 ReservedZBytePadding[HV_PAGE_SIZE];
+} HV_VP_ASSIST_PAGE, * PHV_VP_ASSIST_PAGE;
 
 typedef union _HV_REGISTER_VALUE
 {
@@ -2519,6 +2857,9 @@ typedef UINT64 HV_FLUSH_FLAGS, *PHV_FLUSH_FLAGS;
 #define HV_TRANSLATE_GVA_SET_PAGE_TABLE_BITS (0x0010)
 #define HV_TRANSLATE_GVA_TLB_FLUSH_INHIBIT   (0x0020)
 #define HV_TRANSLATE_GVA_CONTROL_MASK        (0x003F)
+//#define HV_TRANSLATE_GVA_INPUT_VTL_MASK      (0xFF00000000000000UI64)
+#define HV_TRANSLATE_GVA_INPUT_VTL_MASK      (0x1100000000000000UI64)
+
 
 typedef UINT64 HV_TRANSLATE_GVA_CONTROL_FLAGS, *PHV_TRANSLATE_GVA_CONTROL_FLAGS;
 
@@ -2554,30 +2895,53 @@ typedef enum _HV_TRANSLATE_GVA_RESULT_CODE {
 //
 //} HV_TRANSLATE_GVA_RESULT_CODE, *PHV_TRANSLATE_GVA_RESULT_CODE;
 //
-//typedef union _HV_TRANSLATE_GVA_RESULT
-//{
-//	UINT64 AsUINT64;
-//    struct
-//    {
-//        HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
-//        UINT32 CacheType : 8;
-//        UINT32 OverlayPage : 1;
-//        UINT32 Reserved : 23;
-//    };
-//} HV_TRANSLATE_GVA_RESULT, *PHV_TRANSLATE_GVA_RESULT;
+typedef union _HV_TRANSLATE_GVA_RESULT
+{
+	UINT64 AsUINT64;
+    struct
+    {
+        HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
+        UINT32 CacheType : 8;
+        UINT32 OverlayPage : 1;
+        UINT32 Reserved : 23;
+    };
+} HV_TRANSLATE_GVA_RESULT, *PHV_TRANSLATE_GVA_RESULT;
 
-typedef struct _HV_TRANSLATE_GVA_RESULT //Windows 10/ Server 2019
+typedef struct _HV_TRANSLATE_GVA_RESULT_UM //Windows 10/ Server 2019
 {
 	__m128i AsUINT128_0;
-	struct
-	{
-		HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
-		UINT32 Reserved00;
-		UINT64 Reserved01;
-	};
+	//struct
+	//{
+	//	HV_TRANSLATE_GVA_RESULT_CODE ResultCode;
+	//	//UINT32 Reserved00;
+	//	//UINT64 Reserved01;
+ //       UINT32 CacheType : 8;
+ //       UINT32 OverlayPage : 1;
+ //       UINT32 Reserved : 23;
+	//};
+    HV_TRANSLATE_GVA_RESULT Result;
 	__m128i AsUINT128_1;
 	__m128i AsUINT128_2;
-} HV_TRANSLATE_GVA_RESULT, *PHV_TRANSLATE_GVA_RESULT;
+} HV_TRANSLATE_GVA_RESULT_UM, *PHV_TRANSLATE_GVA_RESULT_UM;
+
+//typedef struct
+//{
+//    HV_TRANSLATE_GVA_RESULT_CODE	ResultCode;
+//    UINT32	CacheType : 8;
+//    UINT32	OverlayPage : 1;
+//    UINT32	Reserved3 : 23;
+//} HV_TRANSLATE_GVA_RESULT, * PHV_TRANSLATE_GVA_RESULT;
+
+typedef union
+{
+    UINT8 AsUINT8;
+    struct
+    {
+        UINT8 TargetVtl : 4;
+        UINT8 UseTargetVtl : 1;
+        UINT8 ReservedZ : 3;
+    };
+} HV_INPUT_VTL;
 
 //
 // Read and write GPA access flags.
@@ -2588,8 +2952,10 @@ typedef union _HV_ACCESS_GPA_CONTROL_FLAGS
     UINT64 AsUINT64;
     struct
     {
-        UINT64 CacheType : 8;  // Cache type for access
-        UINT64 Reserved  : 56;
+        UINT8 CacheType : 8;
+        HV_INPUT_VTL InputVtl; 
+        UINT16 ReservedZ0; 
+        UINT32 ReservedZ1;
     };
 } HV_ACCESS_GPA_CONTROL_FLAGS, *PHV_ACCESS_GPA_CONTROL_FLAGS;
 
@@ -3621,35 +3987,35 @@ typedef UINT64 HV_PARTITION_PROPERTY, *PHV_PARTITION_PROPERTY;
 
 typedef enum
 {
-    //
-    // Privilege properties
-    //
-    HvPartitionPropertyPrivilegeFlags       = 0x00010000,
+	// Privilege properties
+	HvPartitionPropertyPrivilegeFlags = 0x00010000,
 
-    //
-    // Scheduling properties
-    //
-    HvPartitionPropertySchedulingControl    = 0x00020000,
-    HvPartitionPropertyCpuReserve           = 0x00020001,
-    HvPartitionPropertyCpuCap               = 0x00020002,
-    HvPartitionPropertyCpuWeight            = 0x00020003,
+	// Scheduling properties
+	HvPartitionPropertySuspend = 0x00020000,
+	HvPartitionPropertyCpuReserve = 0x00020001,
+	HvPartitionPropertyCpuCap = 0x00020002,
+	HvPartitionPropertyCpuWeight = 0x00020003,
 
-    //
-    // Timer assist properties
-    //
-    HvPartitionPropertyEmulatedTimerPeriod  = 0x00030000,
-    HvPartitionPropertyEmulatedTimerControl = 0x00030001,
-    HvPartitionPropertyPmTimerAssist        = 0x00030002,
+	// Timer assist properties
+	HvPartitionPropertyEmulatedTimerPeriod = 0x00030000,
+	HvPartitionPropertyEmulatedTimerControl = 0x00030001,
+	HvPartitionPropertyPmTimerAssist = 0x00030002,
+	HvPartitionPropertyTimeFreeze = 0x00030003,
 
-    //
-    // Debugging properties
-    //
-    HvPartitionPropertyDebugChannelId       = 0x00040000,
+	// Debugging properties
+	HvPartitionPropertyDebugChannelId = 0x00040000,
 
-    //
-    // Resource properties
-    //
-    HvPartitionPropertyVirtualTlbPageCount  = 0x00050000
+	// Resource properties
+	HvPartitionPropertyVirtualTlbPageCount = 0x00050000,
+
+	// Compatibility properties                                 
+	HvPartitionPropertyProcessorVendor = 0x00060000,
+	HvPartitionPropertyProcessorFeatures = 0x00060001,
+	HvPartitionPropertyProcessorXsaveFeatures = 0x00060002,
+	HvPartitionPropertyProcessorCLFlushSize = 0x00060003,
+	HvPartitionPropertyEnlightenmentModifications = 0x00060004,
+
+	HvPartitionPropertyGuestOsId = 0x00070000
 
 } HV_PARTITION_PROPERTY_CODE, *PHV_PARTITION_PROPERTY_CODE;
 
@@ -4374,189 +4740,335 @@ typedef struct HV_CALL_ATTRIBUTES _HV_INPUT_DELETE_VP
 typedef enum _HV_REGISTER_NAME
 {
     // Suspend Registers
-    HvRegisterExplicitSuspend   = 0x00000000,
-    HvRegisterInterceptSuspend  = 0x00000001,
+    HvRegisterExplicitSuspend = 0x00000000,
+    HvRegisterInterceptSuspend = 0x00000001,
 
     // Pending Interruption Register
-    HvX64RegisterPendingInterruption    = 0x00010002,
+    HvX64RegisterPendingInterruption = 0x00010002,
 
-	// Guest Crash Registers 
-	HvRegisterGuestCrashP0 = 0x00000210,
-	HvRegisterGuestCrashP1 = 0x00000211,
-	HvRegisterGuestCrashP2 = 0x00000212,
-	HvRegisterGuestCrashP3 = 0x00000213,
-	HvRegisterGuestCrashP4 = 0x00000214,
-	HvRegisterGuestCrashCtl = 0x00000215,
+    // Guest Crash Registers 
+    HvRegisterGuestCrashP0 = 0x00000210,
+    HvRegisterGuestCrashP1 = 0x00000211,
+    HvRegisterGuestCrashP2 = 0x00000212,
+    HvRegisterGuestCrashP3 = 0x00000213,
+    HvRegisterGuestCrashP4 = 0x00000214,
+    HvRegisterGuestCrashCtl = 0x00000215,
 
     // Interrupt State register
-    HvX64RegisterInterruptState         = 0x00010003,
+    HvX64RegisterInterruptState = 0x00010003,
 
     // User-Mode Registers
-    HvX64RegisterRax                = 0x00020000,
-    HvX64RegisterRcx                = 0x00020001,
-    HvX64RegisterRdx                = 0x00020002,
-    HvX64RegisterRbx                = 0x00020003,
-    HvX64RegisterRsp                = 0x00020004,
-    HvX64RegisterRbp                = 0x00020005,
-    HvX64RegisterRsi                = 0x00020006,
-    HvX64RegisterRdi                = 0x00020007,
-    HvX64RegisterR8                 = 0x00020008,
-    HvX64RegisterR9                 = 0x00020009,
-    HvX64RegisterR10                = 0x0002000A,
-    HvX64RegisterR11                = 0x0002000B,
-    HvX64RegisterR12                = 0x0002000C,
-    HvX64RegisterR13                = 0x0002000D,
-    HvX64RegisterR14                = 0x0002000E,
-    HvX64RegisterR15                = 0x0002000F,
-    HvX64RegisterRip                = 0x00020010,
-    HvX64RegisterRflags             = 0x00020011,
+    HvX64RegisterRax = 0x00020000,
+    HvX64RegisterRcx = 0x00020001,
+    HvX64RegisterRdx = 0x00020002,
+    HvX64RegisterRbx = 0x00020003,
+    HvX64RegisterRsp = 0x00020004,
+    HvX64RegisterRbp = 0x00020005,
+    HvX64RegisterRsi = 0x00020006,
+    HvX64RegisterRdi = 0x00020007,
+    HvX64RegisterR8 = 0x00020008,
+    HvX64RegisterR9 = 0x00020009,
+    HvX64RegisterR10 = 0x0002000A,
+    HvX64RegisterR11 = 0x0002000B,
+    HvX64RegisterR12 = 0x0002000C,
+    HvX64RegisterR13 = 0x0002000D,
+    HvX64RegisterR14 = 0x0002000E,
+    HvX64RegisterR15 = 0x0002000F,
+    HvX64RegisterRip = 0x00020010,
+    HvX64RegisterRflags = 0x00020011,
 
     // Floating Point and Vector Registers
-    HvX64RegisterXmm0               = 0x00030000,
-    HvX64RegisterXmm1               = 0x00030001,
-    HvX64RegisterXmm2               = 0x00030002,
-    HvX64RegisterXmm3               = 0x00030003,
-    HvX64RegisterXmm4               = 0x00030004,
-    HvX64RegisterXmm5               = 0x00030005,
-    HvX64RegisterXmm6               = 0x00030006,
-    HvX64RegisterXmm7               = 0x00030007,
-    HvX64RegisterXmm8               = 0x00030008,
-    HvX64RegisterXmm9               = 0x00030009,
-    HvX64RegisterXmm10              = 0x0003000A,
-    HvX64RegisterXmm11              = 0x0003000B,
-    HvX64RegisterXmm12              = 0x0003000C,
-    HvX64RegisterXmm13              = 0x0003000D,
-    HvX64RegisterXmm14              = 0x0003000E,
-    HvX64RegisterXmm15              = 0x0003000F,
-    HvX64RegisterFpMmx0             = 0x00030010,
-    HvX64RegisterFpMmx1             = 0x00030011,
-    HvX64RegisterFpMmx2             = 0x00030012,
-    HvX64RegisterFpMmx3             = 0x00030013,
-    HvX64RegisterFpMmx4             = 0x00030014,
-    HvX64RegisterFpMmx5             = 0x00030015,
-    HvX64RegisterFpMmx6             = 0x00030016,
-    HvX64RegisterFpMmx7             = 0x00030017,
-    HvX64RegisterFpControlStatus    = 0x00030018,
-    HvX64RegisterXmmControlStatus   = 0x00030019,
+    HvX64RegisterXmm0 = 0x00030000,
+    HvX64RegisterXmm1 = 0x00030001,
+    HvX64RegisterXmm2 = 0x00030002,
+    HvX64RegisterXmm3 = 0x00030003,
+    HvX64RegisterXmm4 = 0x00030004,
+    HvX64RegisterXmm5 = 0x00030005,
+    HvX64RegisterXmm6 = 0x00030006,
+    HvX64RegisterXmm7 = 0x00030007,
+    HvX64RegisterXmm8 = 0x00030008,
+    HvX64RegisterXmm9 = 0x00030009,
+    HvX64RegisterXmm10 = 0x0003000A,
+    HvX64RegisterXmm11 = 0x0003000B,
+    HvX64RegisterXmm12 = 0x0003000C,
+    HvX64RegisterXmm13 = 0x0003000D,
+    HvX64RegisterXmm14 = 0x0003000E,
+    HvX64RegisterXmm15 = 0x0003000F,
+    HvX64RegisterFpMmx0 = 0x00030010,
+    HvX64RegisterFpMmx1 = 0x00030011,
+    HvX64RegisterFpMmx2 = 0x00030012,
+    HvX64RegisterFpMmx3 = 0x00030013,
+    HvX64RegisterFpMmx4 = 0x00030014,
+    HvX64RegisterFpMmx5 = 0x00030015,
+    HvX64RegisterFpMmx6 = 0x00030016,
+    HvX64RegisterFpMmx7 = 0x00030017,
+    HvX64RegisterFpControlStatus = 0x00030018,
+    HvX64RegisterXmmControlStatus = 0x00030019,
 
     // Control Registers
-    HvX64RegisterCr0                = 0x00040000,
-    HvX64RegisterCr2                = 0x00040001,
-    HvX64RegisterCr3                = 0x00040002,
-    HvX64RegisterCr4                = 0x00040003,
-    HvX64RegisterCr8                = 0x00040004,
+    HvX64RegisterCr0 = 0x00040000,
+    HvX64RegisterCr2 = 0x00040001,
+    HvX64RegisterCr3 = 0x00040002,
+    HvX64RegisterCr4 = 0x00040003,
+    HvX64RegisterCr8 = 0x00040004,
 
     // Debug Registers
-    HvX64RegisterDr0                = 0x00050000,
-    HvX64RegisterDr1                = 0x00050001,
-    HvX64RegisterDr2                = 0x00050002,
-    HvX64RegisterDr3                = 0x00050003,
-    HvX64RegisterDr6                = 0x00050004,
-    HvX64RegisterDr7                = 0x00050005,
+    HvX64RegisterDr0 = 0x00050000,
+    HvX64RegisterDr1 = 0x00050001,
+    HvX64RegisterDr2 = 0x00050002,
+    HvX64RegisterDr3 = 0x00050003,
+    HvX64RegisterDr6 = 0x00050004,
+    HvX64RegisterDr7 = 0x00050005,
 
     // Segment Registers
-    HvX64RegisterEs                 = 0x00060000,
-    HvX64RegisterCs                 = 0x00060001,
-    HvX64RegisterSs                 = 0x00060002,
-    HvX64RegisterDs                 = 0x00060003,
-    HvX64RegisterFs                 = 0x00060004,
-    HvX64RegisterGs                 = 0x00060005,
-    HvX64RegisterLdtr               = 0x00060006,
-    HvX64RegisterTr                 = 0x00060007,
+    HvX64RegisterEs = 0x00060000,
+    HvX64RegisterCs = 0x00060001,
+    HvX64RegisterSs = 0x00060002,
+    HvX64RegisterDs = 0x00060003,
+    HvX64RegisterFs = 0x00060004,
+    HvX64RegisterGs = 0x00060005,
+    HvX64RegisterLdtr = 0x00060006,
+    HvX64RegisterTr = 0x00060007,
 
     // Table Registers
-    HvX64RegisterIdtr               = 0x00070000,
-    HvX64RegisterGdtr               = 0x00070001,
+    HvX64RegisterIdtr = 0x00070000,
+    HvX64RegisterGdtr = 0x00070001,
 
     // Virtualized MSRs
-    HvX64RegisterTsc                = 0x00080000,
-    HvX64RegisterEfer               = 0x00080001,
-    HvX64RegisterKernelGsBase       = 0x00080002,
-    HvX64RegisterApicBase           = 0x00080003,
-    HvX64RegisterPat                = 0x00080004,
-    HvX64RegisterSysenterCs         = 0x00080005,
-    HvX64RegisterSysenterEip        = 0x00080006,
-    HvX64RegisterSysenterEsp        = 0x00080007,
-    HvX64RegisterStar               = 0x00080008,
-    HvX64RegisterLstar              = 0x00080009,
-    HvX64RegisterCstar              = 0x0008000A,
-    HvX64RegisterSfmask             = 0x0008000B,
-    HvX64RegisterInitialApicId      = 0x0008000C,
+    HvX64RegisterTsc = 0x00080000,
+    HvX64RegisterEfer = 0x00080001,
+    HvX64RegisterKernelGsBase = 0x00080002,
+    HvX64RegisterApicBase = 0x00080003,
+    HvX64RegisterPat = 0x00080004,
+    HvX64RegisterSysenterCs = 0x00080005,
+    HvX64RegisterSysenterEip = 0x00080006,
+    HvX64RegisterSysenterEsp = 0x00080007,
+    HvX64RegisterStar = 0x00080008,
+    HvX64RegisterLstar = 0x00080009,
+    HvX64RegisterCstar = 0x0008000A,
+    HvX64RegisterSfmask = 0x0008000B,
+    HvX64RegisterInitialApicId = 0x0008000C,
 
     //
     // Cache control MSRs
     //
-    HvX64RegisterMsrMtrrCap         = 0x0008000D,
-    HvX64RegisterMsrMtrrDefType     = 0x0008000E,
-    HvX64RegisterMsrMtrrPhysBase0   = 0x00080010,
-    HvX64RegisterMsrMtrrPhysBase1   = 0x00080011,
-    HvX64RegisterMsrMtrrPhysBase2   = 0x00080012,
-    HvX64RegisterMsrMtrrPhysBase3   = 0x00080013,
-    HvX64RegisterMsrMtrrPhysBase4   = 0x00080014,
-    HvX64RegisterMsrMtrrPhysBase5   = 0x00080015,
-    HvX64RegisterMsrMtrrPhysBase6   = 0x00080016,
-    HvX64RegisterMsrMtrrPhysBase7   = 0x00080017,
-    HvX64RegisterMsrMtrrPhysMask0   = 0x00080040,
-    HvX64RegisterMsrMtrrPhysMask1   = 0x00080041,
-    HvX64RegisterMsrMtrrPhysMask2   = 0x00080042,
-    HvX64RegisterMsrMtrrPhysMask3   = 0x00080043,
-    HvX64RegisterMsrMtrrPhysMask4   = 0x00080044,
-    HvX64RegisterMsrMtrrPhysMask5   = 0x00080045,
-    HvX64RegisterMsrMtrrPhysMask6   = 0x00080046,
-    HvX64RegisterMsrMtrrPhysMask7   = 0x00080047,
+    HvX64RegisterMsrMtrrCap = 0x0008000D,
+    HvX64RegisterMsrMtrrDefType = 0x0008000E,
+    HvX64RegisterMsrMtrrPhysBase0 = 0x00080010,
+    HvX64RegisterMsrMtrrPhysBase1 = 0x00080011,
+    HvX64RegisterMsrMtrrPhysBase2 = 0x00080012,
+    HvX64RegisterMsrMtrrPhysBase3 = 0x00080013,
+    HvX64RegisterMsrMtrrPhysBase4 = 0x00080014,
+    HvX64RegisterMsrMtrrPhysBase5 = 0x00080015,
+    HvX64RegisterMsrMtrrPhysBase6 = 0x00080016,
+    HvX64RegisterMsrMtrrPhysBase7 = 0x00080017,
+    HvX64RegisterMsrMtrrPhysMask0 = 0x00080040,
+    HvX64RegisterMsrMtrrPhysMask1 = 0x00080041,
+    HvX64RegisterMsrMtrrPhysMask2 = 0x00080042,
+    HvX64RegisterMsrMtrrPhysMask3 = 0x00080043,
+    HvX64RegisterMsrMtrrPhysMask4 = 0x00080044,
+    HvX64RegisterMsrMtrrPhysMask5 = 0x00080045,
+    HvX64RegisterMsrMtrrPhysMask6 = 0x00080046,
+    HvX64RegisterMsrMtrrPhysMask7 = 0x00080047,
     HvX64RegisterMsrMtrrFix64k00000 = 0x00080070,
     HvX64RegisterMsrMtrrFix16k80000 = 0x00080071,
     HvX64RegisterMsrMtrrFix16kA0000 = 0x00080072,
-    HvX64RegisterMsrMtrrFix4kC0000  = 0x00080073,
-    HvX64RegisterMsrMtrrFix4kC8000  = 0x00080074,
-    HvX64RegisterMsrMtrrFix4kD0000  = 0x00080075,
-    HvX64RegisterMsrMtrrFix4kD8000  = 0x00080076,
-    HvX64RegisterMsrMtrrFix4kE0000  = 0x00080077,
-    HvX64RegisterMsrMtrrFix4kE8000  = 0x00080078,
-    HvX64RegisterMsrMtrrFix4kF0000  = 0x00080079,
-    HvX64RegisterMsrMtrrFix4kF8000  = 0x0008007A,
+    HvX64RegisterMsrMtrrFix4kC0000 = 0x00080073,
+    HvX64RegisterMsrMtrrFix4kC8000 = 0x00080074,
+    HvX64RegisterMsrMtrrFix4kD0000 = 0x00080075,
+    HvX64RegisterMsrMtrrFix4kD8000 = 0x00080076,
+    HvX64RegisterMsrMtrrFix4kE0000 = 0x00080077,
+    HvX64RegisterMsrMtrrFix4kE8000 = 0x00080078,
+    HvX64RegisterMsrMtrrFix4kF0000 = 0x00080079,
+    HvX64RegisterMsrMtrrFix4kF8000 = 0x0008007A,
 
     // Hypervisor-defined MSRs (Misc)
-    HvX64RegisterHypervisorPresent  = 0x00090000,
-    HvX64RegisterHypercall          = 0x00090001,
-    HvX64RegisterGuestOsId          = 0x00090002,
-    HvX64RegisterVpIndex            = 0x00090003,
-    HvX64RegisterVpRuntime          = 0x00090004,
+    HvX64RegisterHypervisorPresent = 0x00090000,
+    HvX64RegisterHypercall = 0x00090001,
+    HvX64RegisterGuestOsId = 0x00090002,
+    HvX64RegisterVpIndex = 0x00090003,
+    HvX64RegisterVpRuntime = 0x00090004,
+    HvRegisterCpuManagementVersion = 0x00090007,
+
+    // Virtual APIC registers MSRs
+    HvX64RegisterEoi = 0x00090010,
+    HvX64RegisterIcr = 0x00090011,
+    HvX64RegisterTpr = 0x00090012,
+    HvRegisterVpAssistPage = 0x00090013,
+    HvRegisterReferenceTsc = 0x00090017,
+
+    // Performance statistics MSRs
+    HvRegisterStatsPartitionRetail = 0x00090020,
+    HvRegisterStatsPartitionInternal = 0x00090021,
+    HvRegisterStatsVpRetail = 0x00090022,
+    HvRegisterStatsVpInternal = 0x00090023,
+    // Partition Timer Assist Registers
+
+    HvX64RegisterEmulatedTimerPeriod = 0x00090030,
+    HvX64RegisterEmulatedTimerControl = 0x00090031,
+    HvX64RegisterPmTimerAssist = 0x00090032,
 
     // Hypervisor-defined MSRs (Synic)
-    HvX64RegisterSint0              = 0x000A0000,
-    HvX64RegisterSint1              = 0x000A0001,
-    HvX64RegisterSint2              = 0x000A0002,
-    HvX64RegisterSint3              = 0x000A0003,
-    HvX64RegisterSint4              = 0x000A0004,
-    HvX64RegisterSint5              = 0x000A0005,
-    HvX64RegisterSint6              = 0x000A0006,
-    HvX64RegisterSint7              = 0x000A0007,
-    HvX64RegisterSint8              = 0x000A0008,
-    HvX64RegisterSint9              = 0x000A0009,
-    HvX64RegisterSint10             = 0x000A000A,
-    HvX64RegisterSint11             = 0x000A000B,
-    HvX64RegisterSint12             = 0x000A000C,
-    HvX64RegisterSint13             = 0x000A000D,
-    HvX64RegisterSint14             = 0x000A000E,
-    HvX64RegisterSint15             = 0x000A000F,
-    HvX64RegisterSynicBase          = 0x000A0010,
-    HvX64RegisterSversion           = 0x000A0011,
-    HvX64RegisterSifp               = 0x000A0012,
-    HvX64RegisterSipp               = 0x000A0013,
-    HvX64RegisterEom                = 0x000A0014,
+    HvX64RegisterSint0 = 0x000A0000,
+    HvX64RegisterSint1 = 0x000A0001,
+    HvX64RegisterSint2 = 0x000A0002,
+    HvX64RegisterSint3 = 0x000A0003,
+    HvX64RegisterSint4 = 0x000A0004,
+    HvX64RegisterSint5 = 0x000A0005,
+    HvX64RegisterSint6 = 0x000A0006,
+    HvX64RegisterSint7 = 0x000A0007,
+    HvX64RegisterSint8 = 0x000A0008,
+    HvX64RegisterSint9 = 0x000A0009,
+    HvX64RegisterSint10 = 0x000A000A,
+    HvX64RegisterSint11 = 0x000A000B,
+    HvX64RegisterSint12 = 0x000A000C,
+    HvX64RegisterSint13 = 0x000A000D,
+    HvX64RegisterSint14 = 0x000A000E,
+    HvX64RegisterSint15 = 0x000A000F,
+    HvX64RegisterSynicBase = 0x000A0010,
+    HvX64RegisterSversion = 0x000A0011,
+    HvX64RegisterSifp = 0x000A0012,
+    HvX64RegisterSipp = 0x000A0013,
+    HvX64RegisterEom = 0x000A0014,
+    HvRegisterSirbp = 0x000A0015,
 
     // Hypervisor-defined MSRs (Synthetic Timers)
-    HvX64RegisterStimer0Config      = 0x000B0000,
-    HvX64RegisterStimer0Count       = 0x000B0001,
-    HvX64RegisterStimer1Config      = 0x000B0002,
-    HvX64RegisterStimer1Count       = 0x000B0003,
-    HvX64RegisterStimer2Config      = 0x000B0004,
-    HvX64RegisterStimer2Count       = 0x000B0005,
-    HvX64RegisterStimer3Config      = 0x000B0006,
-    HvX64RegisterStimer3Count       = 0x000B0007
+    HvX64RegisterStimer0Config = 0x000B0000,
+    HvX64RegisterStimer0Count = 0x000B0001,
+    HvX64RegisterStimer1Config = 0x000B0002,
+    HvX64RegisterStimer1Count = 0x000B0003,
+    HvX64RegisterStimer2Config = 0x000B0004,
+    HvX64RegisterStimer2Count = 0x000B0005,
+    HvX64RegisterStimer3Config = 0x000B0006,
+    HvX64RegisterStimer3Count = 0x000B0007,
 
-} HV_REGISTER_NAME, *PHV_REGISTER_NAME;
+    // XSAVE/XRSTOR register names. 
+
+    // XSAVE AFX extended state registers.
+    HvX64RegisterYmm0Low = 0x000C0000,
+    HvX64RegisterYmm1Low = 0x000C0001,
+    HvX64RegisterYmm2Low = 0x000C0002,
+    HvX64RegisterYmm3Low = 0x000C0003,
+    HvX64RegisterYmm4Low = 0x000C0004,
+    HvX64RegisterYmm5Low = 0x000C0005,
+    HvX64RegisterYmm6Low = 0x000C0006,
+    HvX64RegisterYmm7Low = 0x000C0007,
+    HvX64RegisterYmm8Low = 0x000C0008,
+    HvX64RegisterYmm9Low = 0x000C0009,
+    HvX64RegisterYmm10Low = 0x000C000A,
+    HvX64RegisterYmm11Low = 0x000C000B,
+    HvX64RegisterYmm12Low = 0x000C000C,
+    HvX64RegisterYmm13Low = 0x000C000D,
+    HvX64RegisterYmm14Low = 0x000C000E,
+    HvX64RegisterYmm15Low = 0x000C000F,
+    HvX64RegisterYmm0High = 0x000C0010,
+    HvX64RegisterYmm1High = 0x000C0011,
+    HvX64RegisterYmm2High = 0x000C0012,
+    HvX64RegisterYmm3High = 0x000C0013,
+    HvX64RegisterYmm4High = 0x000C0014,
+    HvX64RegisterYmm5High = 0x000C0015,
+    HvX64RegisterYmm6High = 0x000C0016,
+    HvX64RegisterYmm7High = 0x000C0017,
+    HvX64RegisterYmm8High = 0x000C0018,
+    HvX64RegisterYmm9High = 0x000C0019,
+    HvX64RegisterYmm10High = 0x000C001A,
+    HvX64RegisterYmm11High = 0x000C001B,
+    HvX64RegisterYmm12High = 0x000C001C,
+    HvX64RegisterYmm13High = 0x000C001D,
+    HvX64RegisterYmm14High = 0x000C001E,
+    HvX64RegisterYmm15High = 0x000C001F,
+
+    // Other MSRs
+    HvX64RegisterMsrIa32MiscEnable = 0x000800A0,
+    HvX64RegisterIa32FeatureControl = 0x000800A1,
+
+    //
+    // Synthetic VSM registers
+    //
+
+    HvRegisterVsmVpVtlControl = 0x000D0000,
+    HvRegisterVsmCodePageOffsets = 0x000D0002,
+    HvRegisterVsmVpStatus = 0x000D0003,
+    HvRegisterVsmPartitionStatus = 0x000D0004,
+    HvRegisterVsmVina = 0x000D0005,
+    HvRegisterVsmCapabilities = 0x000D0006,
+    HvRegisterVsmPartitionConfig = 0x000D0007,
+    HvRegisterVsmVpSecureConfigVtl0 = 0x000D0010,
+    HvRegisterVsmVpSecureConfigVtl1 = 0x000D0011,
+    HvRegisterVsmVpSecureConfigVtl2 = 0x000D0012,
+    HvRegisterVsmVpSecureConfigVtl3 = 0x000D0013,
+    HvRegisterVsmVpSecureConfigVtl4 = 0x000D0014,
+    HvRegisterVsmVpSecureConfigVtl5 = 0x000D0015,
+    HvRegisterVsmVpSecureConfigVtl6 = 0x000D0016,
+    HvRegisterVsmVpSecureConfigVtl7 = 0x000D0017,
+    HvRegisterVsmVpSecureConfigVtl8 = 0x000D0018,
+    HvRegisterVsmVpSecureConfigVtl9 = 0x000D0019,
+    HvRegisterVsmVpSecureConfigVtl10 = 0x000D001A,
+    HvRegisterVsmVpSecureConfigVtl11 = 0x000D001B,
+    HvRegisterVsmVpSecureConfigVtl12 = 0x000D001C,
+    HvRegisterVsmVpSecureConfigVtl13 = 0x000D001D,
+    HvRegisterVsmVpSecureConfigVtl14 = 0x000D001E,
+
+    // Mask Registers
+    HvX64RegisterCrInterceptControl = 0x000E0000,
+    HvX64RegisterCrInterceptCr0Mask = 0x000E0001,
+    HvX64RegisterCrInterceptCr4Mask = 0x000E0002,
+    HvX64RegisterCrInterceptIa32MiscEnableMask = 0x000E0003,
+
+} HV_REGISTER_NAME, * PHV_REGISTER_NAME;
+
+typedef union 
+{ 
+    UINT64 AsUINT64; 
+    struct 
+    { 
+        UINT64 EnabledVtlSet : 16; 
+        UINT64 MaximumVtl : 4; 
+        UINT64 ReservedZ : 44; 
+    }; 
+} HV_REGISTER_VSM_PARTITION_STATUS, *PHV_REGISTER_VSM_PARTITION_STATUS;
+
+typedef union 
+{ 
+    UINT64 AsUINT64; 
+    struct 
+    { 
+        UINT64 ActiveVtl : 4; 
+        UINT64 ActiveMbecEnabled : 1; 
+        UINT64 ReservedZ0 : 11; 
+        UINT64 EnabledVtlSet : 16; 
+        UINT64 ReservedZ1 : 32; 
+    }; 
+
+} HV_REGISTER_VSM_VP_STATUS, *PHV_REGISTER_VSM_VP_STATUS;
+
+typedef union 
+{ 
+    UINT64 AsUINT64; 
+    struct 
+    { 
+        UINT64 EnableVtlProtection : 1; 
+        UINT64 DefaultVtlProtectionMask : 4; 
+        UINT64 ZeroMemoryOnReset : 1; 
+        UINT64 ReservedZ : 58; 
+    }; 
+} HV_REGISTER_VSM_PARTITION_CONFIG, *PHV_REGISTER_VSM_PARTITION_CONFIG;
+
+
+typedef union 
+{ 
+    UINT64 AsUINT64; 
+    struct 
+    { 
+        UINT64 Vector : 8; 
+        UINT64 Enabled : 1; 
+        UINT64 AutoReset : 1; 
+        UINT64 AutoEoi : 1; 
+        UINT64 ReservedP : 53; 
+    }; 
+} HV_REGISTER_VSM_VINA, *PHV_REGISTER_VSM_VINA;
+
+
 typedef const HV_REGISTER_NAME *PCHV_REGISTER_NAME;
 
 //

@@ -70,7 +70,7 @@ windbg.exe -d -v -kx exdi:CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
 
 but before you need create HKEY_LOCAL_MACHINE\SOFTWARE\LiveCloudKd\Parameters\VmId, type REG_DWORD and enter position number in LiveCloudKd list [0, 1, 2]. You can see that list, if you launch LiveCloudKd without parameters. If you launch 1 VM, that parameter will be 0.
 
-You can use WinDBG Preview with EXDi plugin too. But WinDBG Preview has bug with automatically starting EXDi plugin from command line, therefore it must be start manually.
+You can use WinDBG Preview with EXDi plugin too. Some versions of WinDBG Preview has bug to auto starting EXDi plugin from command line, therefore it must be start manually. But latest versions (1.2402.24001.0) works without that errors.
 
 4. Create HKEY_LOCAL_MACHINE\SOFTWARE\LiveCloudKd\Parameters\VmId, type REG_DWORD and enter position number in LiveCloudKd list [0, 1, 2]. You can see that list, if you launch LiveCloudKd without parameters. If you launch 1 VM, that parameter will be 0.
 5. You can start WinDBG with modern UI, go to File-Start debugging-Attach to Kernel, open EXDi tab and paste string 
@@ -78,13 +78,42 @@ You can use WinDBG Preview with EXDi plugin too. But WinDBG Preview has bug with
 ```
 CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
 ```
-or (on latest versions)
+
+or for latest versions you can create KernelConnect0213466621.debugTarget file in C:\Users\UserName\AppData\Local\DBG\Targets
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<TargetConfig Name="exdi:CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess" LastUsed="2024-05-05T19:27:57.9745641Z">
+  <EngineConfig />
+  <EngineOptions>
+    <Property name="InitialBreak" value="true" />
+    <Property name="Elevate" value="false" />
+  </EngineOptions>
+  <TargetOptions>
+    <Option name="KernelConnect">
+      <Property name="ConnectionString" value="exdi:CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess" />
+      <Property name="ConnectionType" value="EXDI" />
+      <Property name="QuietMode" value="false" />
+      <Property name="InitialBreak" value="true" />
+    </Option>
+    <Option name="RestoreBreakpoints">
+      <Property name="Breakpoints" />
+    </Option>
+    <Option name="RestoreCommandHistory">
+      <Property name="History" />
+    </Option>
+  </TargetOptions>
+</TargetConfig>
+```
+and start EXDi plugin from Recent option of debugger
+or launch it from command line (on latest versions)
 ```
 DbgX.Shell.exe -v -kx exdi:CLSID={67030926-1754-4FDA-9788-7F731CBDAE42},Kd=Guess
 ```
 
 to field.
 
+![](./images/EXDI10.png)
 ![](./images/EXDI7.png)
 
 # Live debugging usage
@@ -92,7 +121,9 @@ to field.
 1 CPU for guest OS for live debugging is preferrable.
 Experimented multi-CPU debugging was added. For successfull debugging you need set Debug-Event Filters->Break instruction exception to Handle->Not Handle, and Execution->Output inside WinDBG. 
 
-Set breakpoint using "bp" command, press "Run", wait until breakpoint was triggered. You can set 0x1000 breakpoints now. It is software-like breakpoints, and not limited. You can use single step command.
+Set breakpoint using "bp" command, press "Run", wait until breakpoint was triggered. You can set 0x1000 breakpoints now. It is software-like breakpoints and not limited. 
+Also you can use single step command.
+
 For debugging securekernel:
 
 1. See securekernel.exe base address in logging output window
@@ -184,7 +215,7 @@ command
 ![](./images/EXDI9.png)
 
 4. You can switch register's context to VTL1, using "wrmsr 0x1111 1" command. "wrmsr 0x1111 0" switch back to VTL0. VTL0 and VTL1 memory is accessible all time.
-5. If you want restart VM, but Hyper-V show error about existing partition, see, that LiveCloudKd, WinDBG console message windows are closed. LiveCloudKd duplicate some handles from vmwp.exe. You can manually unload debugger driver, if you kill WinDBG process, becuase some interception message will be handled by driver.
+5. If you want restart VM, but Hyper-V shows error about existing partition, see, that LiveCloudKd and WinDBG console message windows are closed. LiveCloudKd duplicate some handles from vmwp.exe. You can manually unload debugger driver, if you kill WinDBG process, because some interception messages will be handled by driver.
 
 ```
 net stop hvmm

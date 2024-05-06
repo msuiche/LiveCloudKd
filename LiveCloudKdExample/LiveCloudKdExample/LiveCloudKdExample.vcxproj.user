@@ -3,11 +3,23 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerCommand>C:\Distr\Test\WinDBG101903x64\LiveCloudKdExample.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
-    <RemoteDebuggerCommand>C:\Distr\Test\WinDBG101903x64\LiveCloudKdExample.exe</RemoteDebuggerCommand>
-    <RemoteDebuggerWorkingDirectory>C:\Distr\Test\WinDBG101903x64</RemoteDebuggerWorkingDirectory>
-    <RemoteDebuggerServerName>192.168.174.130</RemoteDebuggerServerName>
-    <DeploymentDirectory>C:\Distr\Test\WinDBG101903x64</DeploymentDirectory>
-    <AdditionalFiles>D:\Projects\HyperVDebug\files\LiveCloudKdSdk.dll;</AdditionalFiles>
+    <RemoteDebuggerCommand>C:\Distr\Test\WinDBG1022H2x64\LiveCloudKdExample.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerWorkingDirectory>C:\Distr\Test\WinDBG1022H2x64</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerServerName>192.168.1.114</RemoteDebuggerServerName>
+    <DeploymentDirectory>C:\Distr\Test\WinDBG1022H2x64</DeploymentDirectory>
+    <AdditionalFiles>F:\Projects\HyperVDebug\files\hvlib.dll</AdditionalFiles>
     <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
+    <RemoteDebuggerDeployCppRuntime>true</RemoteDebuggerDeployCppRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <LocalDebuggerCommand>C:\Distr\Test\WinDBG101903x64\LiveCloudKdExample.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
+    <RemoteDebuggerCommand>C:\Distr\Test\WinDBG1022H2x64\LiveCloudKdExample.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerWorkingDirectory>C:\Distr\Test\WinDBG1022H2x64</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerServerName>192.168.1.114</RemoteDebuggerServerName>
+    <DeploymentDirectory>C:\Distr\Test\WinDBG1022H2x64</DeploymentDirectory>
+    <AdditionalFiles>F:\Projects\HyperVDebug\files\hvlib.dll</AdditionalFiles>
+    <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
+    <RemoteDebuggerDeployCppRuntime>true</RemoteDebuggerDeployCppRuntime>
   </PropertyGroup>
 </Project>

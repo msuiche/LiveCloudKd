@@ -1,5 +1,5 @@
 This is description for Python API wrappers for hvlib.dll library  
-Main library file is hvlib.py.  
+Main library file is hvlib.py. Texted on Python 3.x
 See Example.py for detailed information - [Example.py](https://github.com/gerhart01/LiveCloudKd/blob/master/LiveCloudKdPy/Example.py)  
 
 Also there is good example of Python API wrappers usage is Hyper-V memory manager plugin for [volatility plugin](https://github.com/gerhart01/Hyper-V-Tools/tree/main/Plugin_for_volatility)
@@ -15,9 +15,9 @@ Also there is good example of Python API wrappers usage is Hyper-V memory manage
 
 Library installation:
 
-Copy hvlib.py, hvlib.dll and hvmm.sys from [latest](https://github.com/gerhart01/LiveCloudKd/releases) LiveCloudKd distributive to <python_dir>\Lib\site-packages (f.e. C:\Python311x64\Lib\site-packages). 
+Copy hvlib.py, hvlib.dll and hvmm.sys from [latest](https://github.com/gerhart01/LiveCloudKd/releases) LiveCloudKd distributive to <python_dir>\Lib\site-packages (f.e. C:\Python312x64\Lib\site-packages). 
 If you use some python virtual environment plugins, you need to copy files inside it.
-For example to "<dir>\venv\Lib\site-packages" for virtualenv
+For example to "directory_name\venv\Lib\site-packages" for virtualenv
 
 # 1. GetPreferredSettings 
    
@@ -126,7 +126,7 @@ Example:
 vm_handle = objHvlib.SelectPartition(vm_id)
 ```
 
-result - handle of virtual machine or 0 if active machines is not running on host
+result - handle of virtual machine or 0 if, active virtual machines is not running on host
 
 # 5. ReadPhysicalMemoryBlock
 

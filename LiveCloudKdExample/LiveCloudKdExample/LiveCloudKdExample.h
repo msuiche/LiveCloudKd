@@ -5,11 +5,7 @@
 
 #define HANDLE_TYPE_EXAMPLE
 
-#ifndef HANDLE_TYPE_EXAMPLE
-#include "LiveCloudKdSdkPublic.h"
-#else 
-#include "LiveCloudKdSdkHandle.h"
-#endif
+#include "HvlibHandle.h"
 
 #define DUMP_BLOCK_SIZE 1024*1024
 #define DUMP_PAGE_SIZE 0x1000

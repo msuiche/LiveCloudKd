@@ -966,7 +966,7 @@ VidTranslateGvaToGpa(
     __in HV_VP_INDEX VpIndex,
     __in HV_TRANSLATE_GVA_CONTROL_FLAGS ControlFlags,
     __in HV_GVA_PAGE_NUMBER GvaPage,
-    __out PHV_TRANSLATE_GVA_RESULT TranslationResult,
+    __out PHV_TRANSLATE_GVA_RESULT_UM TranslationResult,
     __out PHV_GPA_PAGE_NUMBER GpaPage,
     __out PVOID* MmioContext,
     __out PVOID* MemoryBlockContext,

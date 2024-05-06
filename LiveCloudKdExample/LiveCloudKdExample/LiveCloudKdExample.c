@@ -1,10 +1,26 @@
-// LiveCloudKdExample.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include "LiveCloudKdExample.h"
 
 ULONG64 g_CurrentPartitionIntHandle = 0;
-READ_MEMORY_METHOD g_InterfaceType = ReadInterfaceWinHv;
+READ_MEMORY_METHOD g_MemoryReadInterfaceType = ReadInterfaceWinHv;
+WRITE_MEMORY_METHOD g_MemoryWriteInterfaceType = WriteInterfaceWinHv;
+
+BOOLEAN AsciiToUnicode(PCHAR Asciistring, PWCHAR Unistring)
+{
+	ULONG64 len = strlen(Asciistring);
+	if ((len > 0) & (len < 500))
+	{
+		for (ULONG i = 0; i < len; i++)
+			Unistring[i] = Asciistring[i];
+
+		return TRUE;
+	}
+	else
+	{
+		wprintf(L"ERROR: String length is too big %lld.\n", len);
+	}
+
+	return FALSE;
+};
 
 BOOL
 CreateDestinationFile(LPCWSTR Filename,
@@ -69,9 +85,8 @@ DumpVirtualMachineHandle(
 	BOOLEAN Ret = FALSE;
 
 	ULONG64 lPageCountTotal = 0;
-	//GPAR_BLOCK_INFO BlockIndexInfo = { 0 };
 
-	SdkQueryInformation(PartitionIntHandle, HvddMmMaximumPhysicalPage, &lPageCountTotal);
+	SdkGetData(PartitionIntHandle, InfoMmMaximumPhysicalPage, &lPageCountTotal);
 
 	if (CreateDestinationFile(DestinationFile, &FileHandle) == FALSE) goto Exit;
 
@@ -91,12 +106,11 @@ DumpVirtualMachineHandle(
 			wprintf(L"%I64d MBs... \n", (Index * DUMP_PAGE_SIZE) / (1024 * 1024));
 		}
 
-
-		Ret = SdkHvmmReadPhysicalMemoryHandle(PartitionIntHandle,
+		Ret = SdkReadPhysicalMemory(PartitionIntHandle,
 			Index,
 			DUMP_BLOCK_SIZE,
 			Buffer,
-			g_InterfaceType
+			g_MemoryReadInterfaceType
 		);
 		if (Ret == TRUE) {
 			WriteFileSynchronous(FileHandle, Buffer, DUMP_BLOCK_SIZE);
@@ -106,7 +120,6 @@ DumpVirtualMachineHandle(
 			RtlZeroMemory(Buffer, DUMP_BLOCK_SIZE);
 			WriteFileSynchronous(FileHandle, Buffer, DUMP_BLOCK_SIZE);
 		}
-		//printf("Index = 0x%I64x\n", Index);
 	}
 
 	wprintf(L"Done.\n");
@@ -122,7 +135,7 @@ Exit:
 BOOLEAN Demo2()
 {
 	PULONG64 Partitions;
-	ULONG PartitionCount = 0;
+	ULONG64 PartitionCount = 0;
 	ULONG i;
 	ULONG VmId;
 	BOOLEAN Ret = FALSE;
@@ -132,10 +145,22 @@ BOOLEAN Demo2()
 	ULONG Action = -1;
 	ULONG64 PartitionId = 0;
 	WCHAR* FriendlyNameP = NULL;
+	VM_OPERATIONS_CONFIG VmOperationsConfig = { 0 };
 
-	Partitions = SdkGetPartitionsHandle(&PartitionCount, g_InterfaceType, TRUE);
+	SdkGetDefaultConfig(&VmOperationsConfig);
 
-	wprintf(L"   Virtual Machines:\n");
+	VmOperationsConfig.ReloadDriver = TRUE;
+
+	Partitions = SdkEnumPartitions(&PartitionCount, &VmOperationsConfig);
+
+	if (!Partitions)
+	{
+		wprintf(L"   Unable to get list of partitions\n");
+		return FALSE;
+	}
+
+	wprintf(L"\n   Virtual Machines:\n");
+
 	if (PartitionCount == 0)
 	{
 		wprintf(L"   --> No virtual machines running.\n");
@@ -144,11 +169,23 @@ BOOLEAN Demo2()
 
 	for (i = 0; i < PartitionCount; i += 1)
 	{
-		
-		SdkQueryInformation(Partitions[i], HvddPartitionFrienldyName, &FriendlyNameP);
+		ULONG64 PartitionId = 0;
+		WCHAR* VmTypeString = NULL;
+		CHAR* VmmNameString = NULL;
+		WCHAR* VmGuidString = NULL;
+		SdkGetData(Partitions[i], InfoPartitionFriendlyName, &FriendlyNameP);
+		SdkGetData(Partitions[i], InfoPartitionId, &PartitionId);
+		SdkGetData(Partitions[i], InfoVmtypeString, &VmTypeString);
+		SdkGetData(Partitions[i], InfoVmGuidString, &VmGuidString);
 
-		SdkQueryInformation(Partitions[i], HvddPartitionId, &PartitionId);
-		wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X)\n", i, FriendlyNameP, PartitionId);
+		if ((wcslen(VmGuidString) > 0))
+		{
+			wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X, %s, GUID: %s)\n", i, FriendlyNameP, PartitionId, VmTypeString, VmGuidString);
+		}
+		else
+		{
+			wprintf(L"    --> [%d] %s (PartitionId = 0x%I64X, %s)\n", i, FriendlyNameP, PartitionId, VmTypeString);
+		}
 	}
 
 	VmId = 0;
@@ -171,7 +208,7 @@ BOOLEAN Demo2()
 
 	wprintf(L"   You selected the following virtual machine: ");
 
-	SdkQueryInformation(Partitions[VmId], HvddPartitionFrienldyName, &FriendlyNameP);
+	SdkGetData(Partitions[VmId], InfoPartitionFriendlyName, &FriendlyNameP);
 
 	wprintf(L"%s\n", FriendlyNameP);
 
@@ -209,7 +246,7 @@ BOOLEAN Demo2()
 
 		if (DestinationPath == NULL)
 		{
-			_getws_s(Destination, (sizeof(Destination) - sizeof(Destination[0])));
+			_getws_s(Destination, (_countof(Destination) - sizeof(Destination[0])));
 			DestinationPath = Destination;
 		}
 		else
@@ -219,14 +256,12 @@ BOOLEAN Demo2()
 	}
 
 	g_CurrentPartitionIntHandle = Partitions[VmId];
-	//
-	//need only for getting value of g_CurrentPartition->KiExcaliburData.KiProcessorBlock for reading API example. Long time proc if g_InterfaceType = ReadInterfaceWinHv. Undocumented ReadInterfaceHvmmDrvInternal is faster and works with Windows Containers.
-	//
 
-	if (!SdkFillHvddPartitionStructureHandle(g_CurrentPartitionIntHandle)) {
+	if (!SdkSelectPartition(g_CurrentPartitionIntHandle))
+	{
 		wprintf(L"ERROR:    Cannot initialize hvdd structure.\n");
 		return FALSE;
-	}
+	};
 
 	//
 	// Reading physical memory
@@ -239,15 +274,65 @@ BOOLEAN Demo2()
 	if (!lpBuffer)
 		return FALSE;
 
-	Ret = SdkHvmmReadPhysicalMemoryHandle(g_CurrentPartitionIntHandle, Address, (ULONG)nNumberOfBytesToRead, lpBuffer, g_InterfaceType);
+	Ret = SdkReadPhysicalMemory(g_CurrentPartitionIntHandle, Address, (ULONG)nNumberOfBytesToRead, lpBuffer, g_MemoryReadInterfaceType);
 
 	free(lpBuffer);
+
+	//
+	// Write physical memory
+	//
+
+	Address = 0;
+	ULONG64 buffer = 0x1234567812345678;
+
+	if (!lpBuffer)
+		return FALSE;
+
+	Ret = SdkWritePhysicalMemory(g_CurrentPartitionIntHandle, Address, sizeof(ULONG64), &buffer, g_MemoryReadInterfaceType);
+
+	//
+	// Write virtual memory
+	//
+
+	Address = 0xFFFFFF8000000000;
+	buffer = 0;
+
+	if (!lpBuffer)
+		return FALSE;
+
+	Ret = SdkWriteVirtualMemory(g_CurrentPartitionIntHandle, Address, &buffer, sizeof(ULONG64));
+
+	//
+	// Test many times VM connection
+	//
+
+	SdkClosePartition(g_CurrentPartitionIntHandle);
+	SdkCloseAllPartitions();
+
+	Partitions = SdkEnumPartitions(&PartitionCount, &VmOperationsConfig);
+
+	if (!Partitions)
+	{
+		wprintf(L"   Unable to get list of partitions\n");
+		return FALSE;
+	}
+
+	g_CurrentPartitionIntHandle = Partitions[0];
+
+	if (!SdkSelectPartition(g_CurrentPartitionIntHandle))
+	{
+		wprintf(L"ERROR:    Cannot initialize hvdd structure.\n");
+		return FALSE;
+	};
+
+	SdkClosePartition(g_CurrentPartitionIntHandle);
+	SdkCloseAllPartitions();
 
 	//
 	// Reading virtual memory (KiProcessorBlock area)
 	//
 	ULONG64 Va = 0;
-	SdkQueryInformation(g_CurrentPartitionIntHandle, HvddKiProcessorBlock, &Va);
+	SdkGetData(g_CurrentPartitionIntHandle, InfoKiProcessorBlock, &Va);
 	//ULONG64 Va = 0xFFFFF90012345678ULL;
 
 	lpBuffer = malloc(0x1000);
@@ -255,7 +340,7 @@ BOOLEAN Demo2()
 	if (!lpBuffer)
 		return FALSE;
 
-	if (SdkMmReadVirtualAddressHandle(g_CurrentPartitionIntHandle, Va, lpBuffer, sizeof(ULONG64)) == FALSE) {
+	if (SdkReadVirtualMemory(g_CurrentPartitionIntHandle, Va, lpBuffer, sizeof(ULONG64)) == FALSE) {
 		wprintf(L"MmReadVirtualAddress failed\n");
 		return FALSE;
 	}
@@ -265,19 +350,19 @@ BOOLEAN Demo2()
 	free(lpBuffer);
 
 	//
-	//Suspend virtual machine
+	// Suspend virtual machine
 	//
 
-	SdkControlVmStateHandle(g_CurrentPartitionIntHandle, SuspendVm, SuspendResumePowershell);
+	SdkControlVmState(g_CurrentPartitionIntHandle, SuspendVm, SuspendResumePowershell, FALSE);
 
 	//
-	//Resume virtual machine
+	// Resume virtual machine
 	//
 
-	SdkControlVmStateHandle(g_CurrentPartitionIntHandle, ResumeVm, SuspendResumePowershell);
+	SdkControlVmState(g_CurrentPartitionIntHandle, ResumeVm, SuspendResumePowershell, FALSE);
 
 	//
-	//dump VM to file
+	// dump VM to file
 	//
 
 	if (DestinationPath == NULL)
@@ -293,7 +378,7 @@ BOOLEAN Demo2()
 int main()
 {
 	//
-	//Demo1 uses full PHVDD_PARTITION structure for working with partition. 
+	//Demo1 uses full PHVMM_PARTITION structure for working with partition. 
 	//Demo2 using more simple HANDLE for using with non-C languages.
 	//
 	

@@ -774,17 +774,17 @@ typedef struct _VID_MESSAGE_INFO
     ((((_MessageType) & VID_MESSAGE_TYPE_MASK) < VidMessageTypeCount) ? \
         ((_MessageType) & VID_MESSAGE_TYPE_MASK) : VidMessageInvalid)
 
-#define     VID_MESSAGE_INFO_GET(_MessageType) \
+#define     VID_MESSAGE_HVMM_GET(_MessageType) \
     (&VidMessageInfoArray[VID_MESSAGE_TYPE_INDEX(_MessageType)])
 
-#define     VID_MESSAGE_INFO_GET_PROPERTY(_MessageType, _Property) \
-    (VID_MESSAGE_INFO_GET(_MessageType)->_Property)
+#define     VID_MESSAGE_HVMM_GET_PROPERTY(_MessageType, _Property) \
+    (VID_MESSAGE_HVMM_GET(_MessageType)->_Property)
 
-#define     VID_MESSAGE_INFO_GET_DATA_SEND_PAYLOAD_SIZE(_MessageType) \
-    (VID_MESSAGE_INFO_GET_PROPERTY(_MessageType, DataSendPayloadSizeInBytes))
+#define     VID_MESSAGE_HVMM_GET_DATA_SEND_PAYLOAD_SIZE(_MessageType) \
+    (VID_MESSAGE_HVMM_GET_PROPERTY(_MessageType, DataSendPayloadSizeInBytes))
 
-#define     VID_MESSAGE_INFO_GET_DATA_RECV_PAYLOAD_SIZE(_MessageType) \
-    (VID_MESSAGE_INFO_GET_PROPERTY(_MessageType, DataRecvPayloadSizeInBytes))
+#define     VID_MESSAGE_HVMM_GET_DATA_RECV_PAYLOAD_SIZE(_MessageType) \
+    (VID_MESSAGE_HVMM_GET_PROPERTY(_MessageType, DataRecvPayloadSizeInBytes))
 
 #define     VID_MESSAGE_DATA_SEND_PAYLOAD_SIZE_MAX \
     (sizeof(VID_MSG_DATA) - offsetof(VID_MSG_DATA, Data))
