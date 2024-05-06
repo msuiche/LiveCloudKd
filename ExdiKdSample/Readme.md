@@ -10,7 +10,7 @@ EXDI is an interface that allows extending WinDBG by adding support for hardware
 
 For installation: 
 
-1. Copy LiveCloudKd.exe, LiveCloudKdSdk.dll, hvmm.sys, vidaux.dll (only for ReadInterfaceVidAux method) and ExdiKdSample.dll to WinDBG x64 directory
+1. Copy LiveCloudKd.exe, hvlib.dll, hvmm.sys and ExdiKdSample.dll to WinDBG x64 directory
 2. Register ExdiKdSample.dll using regsvr32.exe ExdiKdSample.dll command
 3. Start LiveCloudKd with /w option: LiveCloudKd.exe /w. It is automatically launch WinDBG with EXDi interface.
 

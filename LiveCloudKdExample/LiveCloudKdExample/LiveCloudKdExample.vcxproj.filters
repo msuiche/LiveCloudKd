@@ -18,9 +18,6 @@
     <ClCompile Include="LiveCloudKdExample.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LiveCloudKdExampleHvdd.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LiveCloudKdExample.h">
