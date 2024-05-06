@@ -229,7 +229,7 @@ SdkEnumPartitions(
 	
 ```
 
-result - BOOLEAN
+result - PULONG64
 
 # 6. SdkGetData (SdkGetData2)
 
